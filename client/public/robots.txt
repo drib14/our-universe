@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /welcome
+Allow: /login
+Allow: /register
+Disallow: /api/
+
+Sitemap: https://pairly.app/sitemap.xml
