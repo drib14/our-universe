@@ -34,11 +34,11 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 text-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 text-white flex flex-col w-full">
       <Navbar />
-      <div className="flex flex-1 max-w-7xl w-full mx-auto">
+      <div className="flex flex-1 w-full">
         <Sidebar />
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto max-w-5xl">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto w-full">
           <Outlet />
         </main>
       </div>

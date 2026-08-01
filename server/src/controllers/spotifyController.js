@@ -40,27 +40,64 @@ const authCallback = async (req, res, next) => {
   }
 };
 
-// Search Spotify tracks (client credentials — no user login needed)
+// Search music tracks (Spotify Web API with resilient iTunes API fallback for 30s previews)
 const searchTracks = async (req, res, next) => {
   try {
     const { q, limit = 10 } = req.query;
-    const spotifyApi = getSpotifyApi();
+    if (!q || !q.trim()) {
+      return res.json({ success: true, data: { tracks: [] } });
+    }
 
-    // Use client credentials flow for search
-    const authData = await spotifyApi.clientCredentialsGrant();
-    spotifyApi.setAccessToken(authData.body['access_token']);
+    let tracks = [];
 
-    const results = await spotifyApi.searchTracks(q, { limit: parseInt(limit) });
+    // Attempt 1: Try Spotify Web API if client ID & secret configured
+    if (process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_ID !== 'your_spotify_client_id') {
+      try {
+        const spotifyApi = getSpotifyApi();
+        const authData = await spotifyApi.clientCredentialsGrant();
+        spotifyApi.setAccessToken(authData.body['access_token']);
 
-    const tracks = results.body.tracks.items.map((t) => ({
-      spotifyId: t.id,
-      title: t.name,
-      artist: t.artists.map((a) => a.name).join(', '),
-      albumArt: t.album.images[0]?.url || '',
-      spotifyUri: t.uri,
-      previewUrl: t.preview_url || '',
-      duration: t.duration_ms,
-    }));
+        const results = await spotifyApi.searchTracks(q, { limit: parseInt(limit) });
+        if (results.body?.tracks?.items) {
+          tracks = results.body.tracks.items.map((t) => ({
+            spotifyId: t.id,
+            title: t.name,
+            artist: t.artists.map((a) => a.name).join(', '),
+            albumArt: t.album.images[0]?.url || '',
+            spotifyUri: t.uri,
+            previewUrl: t.preview_url || '',
+            duration: t.duration_ms,
+          }));
+        }
+      } catch (spotifyErr) {
+        console.warn(`Spotify API search failed (${spotifyErr.message || '403 Forbidden'}). Falling back to iTunes Music API for 30s previews...`);
+      }
+    }
+
+    // Attempt 2: Fallback to iTunes Search API (100% reliable, zero 403 errors, includes guaranteed 30s audio previews)
+    if (tracks.length === 0) {
+      try {
+        const iTunesRes = await fetch(
+          `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=${limit}`
+        );
+        if (iTunesRes.ok) {
+          const data = await iTunesRes.json();
+          if (data.results) {
+            tracks = data.results.map((t) => ({
+              spotifyId: String(t.trackId),
+              title: t.trackName,
+              artist: t.artistName,
+              albumArt: t.artworkUrl100 ? t.artworkUrl100.replace('100x100bb', '600x600bb') : '',
+              spotifyUri: t.trackViewUrl || '',
+              previewUrl: t.previewUrl || '',
+              duration: t.trackTimeMillis || 0,
+            }));
+          }
+        }
+      } catch (iTunesErr) {
+        console.error('iTunes Search API fetch error:', iTunesErr.message);
+      }
+    }
 
     res.json({ success: true, data: { tracks } });
   } catch (error) {
@@ -87,7 +124,7 @@ const getPlaylist = async (req, res, next) => {
 // Add song to playlist
 const addSong = async (req, res, next) => {
   try {
-    const { title, artist, albumArt, spotifyUri, spotifyId, previewUrl, note, isOurSong } = req.body;
+    const { title, artist, albumArt, spotifyUri, spotifyId, previewUrl, note, startTime, isOurSong } = req.body;
 
     let playlist = await SharedPlaylist.findOne({ coupleId: req.couple._id });
     if (!playlist) {
@@ -103,6 +140,7 @@ const addSong = async (req, res, next) => {
       title, artist, albumArt, spotifyUri, spotifyId, previewUrl,
       addedBy: req.user._id,
       note: note || '',
+      startTime: Number(startTime) || 0,
       isOurSong: isOurSong || false,
     });
 

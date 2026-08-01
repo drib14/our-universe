@@ -1,12 +1,15 @@
 import React from 'react';
 import { LogOut, Heart } from 'lucide-react';
 import Logo from './Logo';
+import Avatar from './Avatar';
 import useAuthStore from '../../stores/useAuthStore';
 import useCoupleStore from '../../stores/useCoupleStore';
 
 const Navbar = () => {
   const { user, logout } = useAuthStore();
-  const { couple, partner } = useCoupleStore();
+  const { couple, partner: storePartner } = useCoupleStore();
+
+  const partner = storePartner || (typeof user?.partnerId === 'object' ? user?.partnerId : null);
 
   const calculateDays = () => {
     const startDate = couple?.anniversaryDate || user?.relationshipStartDate;
@@ -21,7 +24,7 @@ const Navbar = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full glass-card border-b border-white/10 bg-rose-950/80 backdrop-blur-xl px-4 sm:px-8 py-3">
-      <div className="flex items-center justify-between max-w-7xl mx-auto">
+      <div className="flex items-center justify-between w-full">
         {/* Brand Logo */}
         <Logo size="md" />
 
@@ -38,31 +41,10 @@ const Navbar = () => {
         {/* Right: Avatars + Logout */}
         <div className="flex items-center gap-3">
           <div className="flex items-center -space-x-2">
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-9 h-9 rounded-full border-2 border-rose-500 object-cover"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs font-bold border-2 border-rose-500">
-                {user?.name?.[0] || 'U'}
-              </div>
+            <Avatar src={user?.avatar} name={user?.name} size="sm" className="border-rose-500" />
+            {partner && (
+              <Avatar src={partner?.avatar} name={partner?.name} size="sm" className="border-purple-500" />
             )}
-
-            {partner ? (
-              partner.avatar ? (
-                <img
-                  src={partner.avatar}
-                  alt={partner.name}
-                  className="w-9 h-9 rounded-full border-2 border-purple-500 object-cover"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold border-2 border-purple-500">
-                  {partner.name?.[0] || 'P'}
-                </div>
-              )
-            ) : null}
           </div>
 
           <span className="hidden sm:inline text-xs font-medium text-rose-200/90">

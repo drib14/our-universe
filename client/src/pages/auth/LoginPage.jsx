@@ -46,6 +46,12 @@ const LoginPage = () => {
         setAuth(user, accessToken, refreshToken);
         await fetchCouple();
 
+        if (res.data.deletionCancelledNotice) {
+          toast.success('Account deletion request automatically cancelled because you logged back in!');
+        } else {
+          toast.success('Welcome back to Pairly!');
+        }
+
         if (user.coupleId || user.partnerId) {
           navigate('/');
         } else {
@@ -73,7 +79,7 @@ const LoginPage = () => {
     try {
       const res = await api.post('/auth/forgot-password', { email: forgotEmail });
       if (res.success) {
-        toast.success('✉️ 6-digit reset code sent to your email!');
+        toast.success('6-digit reset code sent to your email!');
         setForgotStep(2);
       }
     } catch (err) {
@@ -100,7 +106,7 @@ const LoginPage = () => {
       });
 
       if (res.success) {
-        toast.success('🎉 Password reset successfully! Please log in.');
+        toast.success('Password reset successfully! Please log in.');
         setIsForgotModalOpen(false);
         setForgotStep(1);
         setForgotEmail('');
@@ -207,7 +213,7 @@ const LoginPage = () => {
               required
             />
             <Button type="submit" isLoading={isForgotLoading} className="w-full font-bold mt-2">
-              Send 6-Digit Reset Code ✉️
+              Send 6-Digit Reset Code
             </Button>
           </form>
         ) : (
@@ -235,7 +241,7 @@ const LoginPage = () => {
               required
             />
             <Button type="submit" isLoading={isForgotLoading} className="w-full font-bold mt-2">
-              Verify Code & Reset Password 🔑
+              Verify Code & Reset Password
             </Button>
           </form>
         )}

@@ -62,7 +62,7 @@ const LandingPage = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg sm:text-xl text-rose-200/70 max-w-2xl font-light"
         >
-          From scheduled time-capsule letters and real-time mood check-ins to shared Spotify playlists, gift boxes, and memory maps.
+          From scheduled time-capsule letters and real-time mood check-ins to shared playlists, gift boxes, and memory maps.
         </motion.p>
 
         <motion.div
@@ -88,48 +88,45 @@ const LandingPage = () => {
           {[
             {
               icon: Mail,
-              title: '💌 Capsule Mail',
+              title: 'Capsule Mail',
               desc: 'Write letters to be unlocked on future anniversaries or dates.',
             },
             {
               icon: MapPin,
-              title: '📍 Relationship Map',
+              title: 'Relationship Map',
               desc: 'Pin your first date, favorite dates, and unforgettable trips.',
             },
             {
-              icon: Trophy,
-              title: '🎮 Couple Quests',
-              desc: 'Earn hearts and level up together with weekly relationship goals.',
+              icon: Music,
+              title: 'Shared Playlist',
+              desc: 'Curate your joint soundtrack with track covers and audio previews.',
             },
             {
               icon: MessageSquare,
-              title: '💬 Private Chat',
+              title: 'Private Chat',
               desc: 'Real-time messaging with custom stickers, voice notes & read receipts.',
             },
           ].map((item, idx) => {
             const Icon = item.icon;
             return (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 + idx * 0.1 }}
-                className="glass-card glass-card-hover p-6 rounded-2xl border border-white/10"
+              <div
+                key={idx}
+                className="glass-card p-5 rounded-2xl border border-white/10 hover:border-rose-500/40 transition-all flex flex-col gap-2"
               >
-                <div className="w-12 h-12 rounded-xl bg-rose-500/20 text-rose-300 flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6" />
+                <div className="w-9 h-9 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400">
+                  <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1">{item.title}</h3>
+                <h3 className="text-base font-bold text-white mt-1">{item.title}</h3>
                 <p className="text-xs text-rose-200/60 leading-relaxed">{item.desc}</p>
-              </motion.div>
+              </div>
             );
           })}
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t border-white/10 text-center text-xs text-rose-300/40 z-10">
-        © 2026 Pairly — Our Universe. Crafted with ❤️ for couples everywhere.
+      <footer className="w-full text-center py-6 border-t border-white/10 text-xs text-rose-200/40">
+        © 2026 Pairly — Our Universe. Crafted for couples everywhere.
       </footer>
     </div>
   );

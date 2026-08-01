@@ -5,6 +5,7 @@ import { Mail, Calendar, Lock, Image as ImageIcon, Send, ArrowLeft } from 'lucid
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import CustomDatePicker from '../../components/ui/CustomDatePicker';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -32,7 +33,7 @@ const ComposeLetterPage = () => {
       });
 
       if (res.success) {
-        toast.success('💌 Time capsule sealed and sent!');
+        toast.success('Time capsule sealed and sent!');
         navigate('/capsule-mail');
       } else {
         toast.error(res.message || 'Failed to seal letter.');
@@ -62,18 +63,16 @@ const ComposeLetterPage = () => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <Input
             label="Letter Title"
-            placeholder="e.g. Open on Our Next Anniversary 💕"
+            placeholder="e.g. Open on Our Next Anniversary"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
 
-          <Input
+          <CustomDatePicker
             label="Future Unlock Date"
-            type="date"
-            icon={Calendar}
             value={unlockDate}
-            onChange={(e) => setUnlockDate(e.target.value)}
+            onChange={(dateVal) => setUnlockDate(dateVal)}
             required
           />
 
@@ -86,7 +85,7 @@ const ComposeLetterPage = () => {
               placeholder="Write your heartfelt letter here..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="glass-input w-full rounded-2xl p-4 text-sm text-white placeholder-white/30 focus:border-rose-400 focus:outline-none resize-none font-romantic text-lg"
+              className="glass-input w-full rounded-2xl p-4 text-base text-white placeholder-white/30 focus:border-rose-400 focus:outline-none resize-none font-sans"
               required
             />
           </div>
@@ -96,7 +95,7 @@ const ComposeLetterPage = () => {
               <Lock className="w-4 h-4 text-amber-400" /> Letter remains encrypted until unlock date
             </span>
             <Button type="submit" isLoading={isSubmitting} size="lg" className="font-bold">
-              Seal & Send Letter 💌
+              Seal & Send Letter
             </Button>
           </div>
         </form>

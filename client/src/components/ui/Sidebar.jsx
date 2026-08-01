@@ -23,7 +23,6 @@ const navItems = [
   { name: 'Surprise Box', path: '/surprises', icon: Gift },
   { name: 'Memories', path: '/memories', icon: Image },
   { name: 'Places Map', path: '/places', icon: MapPin },
-  { name: 'Couple Quests', path: '/quests', icon: Trophy },
   { name: 'Shared Songs', path: '/songs', icon: Music },
   { name: 'Calendar', path: '/calendar', icon: Calendar },
   { name: 'Private Chat', path: '/chat', icon: MessageSquare },

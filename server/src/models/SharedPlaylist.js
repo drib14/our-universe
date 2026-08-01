@@ -19,6 +19,7 @@ const sharedPlaylistSchema = new mongoose.Schema(
         addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         addedAt: { type: Date, default: Date.now },
         note: { type: String, default: '', maxlength: 200 },
+        startTime: { type: Number, default: 0 },
         isOurSong: { type: Boolean, default: false },
       },
     ],

@@ -41,8 +41,8 @@ const register = async (req, res, next) => {
     });
 
     // Send warm welcome email (optional non-blocking)
-    const welcomeSubject = '💕 Welcome to Pairly — Your Shared Universe';
-    const welcomeHtml = `<div font-family: sans-serif;><h2>Welcome to Pairly, ${name}!</h2><p>Your private relationship space is ready. Share your pair code <strong>${pairCode}</strong> with your partner to get started.</p></div>`;
+    const welcomeSubject = 'Welcome to Pairly — Your Private Universe';
+    const welcomeHtml = `<div style="font-family: sans-serif; padding: 20px; background: #0c020d; color: #ffffff;"><h2>Welcome to Pairly, ${name}!</h2><p>Your private relationship space is ready. Share your pair code <strong>${pairCode}</strong> with your partner to get started.</p></div>`;
     sendEmail(email, welcomeSubject, welcomeHtml).catch((err) =>
       console.error('Welcome email send failed:', err.message)
     );
@@ -88,6 +88,15 @@ const login = async (req, res, next) => {
       });
     }
 
+    // Auto-cancel scheduled account deletion if user logs back in
+    let deletionCancelledNotice = false;
+    if (user.deletionScheduledAt) {
+      user.deletionScheduledAt = null;
+      user.deletionScheduledFor = null;
+      await user.save();
+      deletionCancelledNotice = true;
+    }
+
     const accessToken = generateAccessToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
@@ -97,11 +106,14 @@ const login = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Login successful!',
+      message: deletionCancelledNotice
+        ? 'Account deletion automatically cancelled because you logged back in!'
+        : 'Login successful!',
       data: {
         user: user.toJSON(),
         accessToken,
         refreshToken,
+        deletionCancelledNotice,
       },
     });
   } catch (error) {
@@ -123,15 +135,22 @@ const refresh = async (req, res, next) => {
       });
     }
 
-    const decoded = verifyRefreshToken(refreshToken);
-    const hashedToken = hashToken(refreshToken);
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token.',
+      });
+    }
 
+    const hashedToken = hashToken(refreshToken);
     const user = await User.findById(decoded.userId).select('+refreshTokens');
 
-    if (!user || !user.refreshTokens.includes(hashedToken)) {
+    if (!user || !user.refreshTokens || !user.refreshTokens.includes(hashedToken)) {
       if (user) {
-        user.refreshTokens = [];
-        await user.save();
+        await User.updateOne({ _id: user._id }, { $set: { refreshTokens: [] } });
       }
       return res.status(401).json({
         success: false,
@@ -141,15 +160,15 @@ const refresh = async (req, res, next) => {
 
     const newAccessToken = generateAccessToken(user._id);
     const newRefreshToken = generateRefreshToken(user._id);
+    const newHashed = hashToken(newRefreshToken);
 
-    user.refreshTokens = user.refreshTokens.filter((t) => t !== hashedToken);
-    user.refreshTokens.push(hashToken(newRefreshToken));
-
-    if (user.refreshTokens.length > 5) {
-      user.refreshTokens = user.refreshTokens.slice(-5);
+    let updatedTokens = user.refreshTokens.filter((t) => t !== hashedToken);
+    updatedTokens.push(newHashed);
+    if (updatedTokens.length > 5) {
+      updatedTokens = updatedTokens.slice(-5);
     }
 
-    await user.save();
+    await User.updateOne({ _id: user._id }, { $set: { refreshTokens: updatedTokens } });
 
     res.json({
       success: true,
@@ -159,15 +178,6 @@ const refresh = async (req, res, next) => {
       },
     });
   } catch (error) {
-    if (
-      error.name === 'TokenExpiredError' ||
-      error.name === 'JsonWebTokenError'
-    ) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token. Please log in again.',
-      });
-    }
     next(error);
   }
 };
@@ -303,7 +313,7 @@ const updateProfile = async (req, res, next) => {
 
     if (req.file) {
       const result = await uploadToCloudinary(req.file.buffer, 'avatars', 'image');
-      updates.avatar = { url: result.url, publicId: result.publicId };
+      updates.avatar = result.url;
     }
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
@@ -334,6 +344,46 @@ const updatePushToken = async (req, res, next) => {
   }
 };
 
+/**
+ * POST /api/auth/delete-account
+ * Schedules account deletion with 30 days inactivity grace period or cancels deletion.
+ */
+const scheduleAccountDeletion = async (req, res, next) => {
+  try {
+    const { action } = req.body; // 'schedule' or 'cancel'
+
+    let updates = {};
+    if (action === 'cancel') {
+      updates = {
+        deletionScheduledAt: null,
+        deletionScheduledFor: null,
+      };
+    } else {
+      const now = new Date();
+      const scheduledDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days minimum inactivity
+      updates = {
+        deletionScheduledAt: now,
+        deletionScheduledFor: scheduledDate,
+      };
+    }
+
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true })
+      .populate('partnerId', 'name avatar email')
+      .populate('coupleId');
+
+    res.json({
+      success: true,
+      message:
+        action === 'cancel'
+          ? 'Account deletion request has been cancelled!'
+          : 'Account deletion scheduled. Your account will be permanently deleted after 1 month of inactivity.',
+      data: { user },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -344,4 +394,5 @@ module.exports = {
   getMe,
   updateProfile,
   updatePushToken,
+  scheduleAccountDeletion,
 };

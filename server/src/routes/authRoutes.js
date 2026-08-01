@@ -11,6 +11,7 @@ const {
   getMe,
   updateProfile,
   updatePushToken,
+  scheduleAccountDeletion,
 } = require('../controllers/authController');
 const { auth } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimiter');
@@ -66,6 +67,8 @@ router.post('/logout', auth, logout);
 router.get('/me', auth, getMe);
 
 router.put('/profile', auth, upload.single('avatar'), updateProfile);
+
+router.post('/delete-account', auth, scheduleAccountDeletion);
 
 router.put(
   '/push-token',

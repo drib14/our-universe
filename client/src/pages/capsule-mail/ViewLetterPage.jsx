@@ -152,7 +152,7 @@ const ViewLetterPage = () => {
               <Sparkles className="w-6 h-6 text-amber-300" />
             </div>
 
-            <div className="font-romantic text-2xl text-rose-100 leading-relaxed whitespace-pre-wrap py-4">
+            <div className="text-lg text-white font-medium leading-relaxed whitespace-pre-wrap py-4">
               {letter.content}
             </div>
 

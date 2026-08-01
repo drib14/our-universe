@@ -24,7 +24,6 @@ import MoodPage from './pages/daily-mood/MoodPage';
 import SurprisesPage from './pages/surprises/SurprisesPage';
 import MemoriesPage from './pages/memories/MemoriesPage';
 import PlacesPage from './pages/places/PlacesPage';
-import QuestsPage from './pages/quests/QuestsPage';
 import PlaylistPage from './pages/songs/PlaylistPage';
 import CalendarPage from './pages/calendar/CalendarPage';
 import ChatPage from './pages/chat/ChatPage';
@@ -68,7 +67,6 @@ function App() {
             <Route path="/surprises" element={<SurprisesPage />} />
             <Route path="/memories" element={<MemoriesPage />} />
             <Route path="/places" element={<PlacesPage />} />
-            <Route path="/quests" element={<QuestsPage />} />
             <Route path="/songs" element={<PlaylistPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/chat" element={<ChatPage />} />

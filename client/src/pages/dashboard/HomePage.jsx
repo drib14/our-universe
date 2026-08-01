@@ -62,13 +62,7 @@ const HomePage = () => {
       link: '/places',
       color: 'from-emerald-500 to-teal-600',
     },
-    {
-      title: 'Couple Quests',
-      desc: 'Level up your relationship',
-      icon: Trophy,
-      link: '/quests',
-      color: 'from-blue-500 to-indigo-600',
-    },
+
     {
       title: 'Private Chat',
       desc: 'Real-time love notes & chat',

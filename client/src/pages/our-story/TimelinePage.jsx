@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { History, Plus, Calendar, MapPin, Heart, Sparkles, Trash2, MessageSquare, Ring, Plane, Star } from 'lucide-react';
+import { History, Plus, Calendar, MapPin, Heart, Sparkles, Trash2, MessageSquare, Plane, Star } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import CustomSelect from '../../components/ui/CustomSelect';
+import CustomDatePicker from '../../components/ui/CustomDatePicker';
 import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -189,29 +191,25 @@ const TimelinePage = () => {
             required
           />
 
-          <Input
+          <CustomDatePicker
             label="Date"
-            type="date"
-            icon={Calendar}
             value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            onChange={(dateVal) => setFormData({ ...formData, date: dateVal })}
             required
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-rose-200/80 uppercase">Category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="glass-input w-full rounded-xl p-2.5 text-sm text-white bg-rose-950 focus:outline-none"
-            >
-              <option value="first_chat">First Chat</option>
-              <option value="first_date">First Date</option>
-              <option value="anniversary">Anniversary</option>
-              <option value="vacation">Vacation</option>
-              <option value="milestone">Milestone</option>
-            </select>
-          </div>
+          <CustomSelect
+            label="Category"
+            options={[
+              { label: 'First Chat', value: 'first_chat' },
+              { label: 'First Date', value: 'first_date' },
+              { label: 'Anniversary', value: 'anniversary' },
+              { label: 'Vacation', value: 'vacation' },
+              { label: 'Milestone', value: 'milestone' },
+            ]}
+            value={formData.category}
+            onChange={(catVal) => setFormData({ ...formData, category: catVal })}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-rose-200/80 uppercase">Description / Story</label>

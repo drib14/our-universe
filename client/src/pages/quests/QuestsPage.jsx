@@ -54,7 +54,7 @@ const QuestsPage = () => {
       spread: 60,
       origin: { y: 0.7 },
     });
-    toast.success('Task completed! +15 XP ❤️');
+    toast.success('Task completed! +15 XP');
     setXp((prev) => Math.min(maxXp, prev + 15));
   };
 

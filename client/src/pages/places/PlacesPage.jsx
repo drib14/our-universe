@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { MapPin, Plus, Heart, Star, List, Map as MapIcon, Trash2, Utensils, Sunset, Plane } from 'lucide-react';
+import { MapPin, Plus, Star, List, Map as MapIcon, Trash2, Search } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import CustomSelect from '../../components/ui/CustomSelect';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -19,12 +21,29 @@ const heartIcon = new L.DivIcon({
   popupAnchor: [0, -34],
 });
 
+// Component to dynamically re-center map view
+const MapController = ({ center }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center.length === 2) {
+      map.setView(center, 12);
+    }
+  }, [center, map]);
+  return null;
+};
+
 const PlacesPage = () => {
   const [places, setPlaces] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState('map');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // LocationIQ Search state
+  const [locationQuery, setLocationQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+
+  // Form State
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -35,6 +54,13 @@ const PlacesPage = () => {
     rating: 5,
   });
 
+  const [mapCenter, setMapCenter] = useState([37.7749, -122.4194]);
+
+  // Delete Confirmation State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [placeToDelete, setPlaceToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     fetchPlaces();
   }, []);
@@ -44,13 +70,50 @@ const PlacesPage = () => {
     try {
       const res = await api.get('/places');
       if (res.success && res.data) {
-        setPlaces(res.data.places || res.data);
+        const fetchedPlaces = res.data.places || res.data;
+        setPlaces(fetchedPlaces);
+        if (fetchedPlaces.length > 0 && fetchedPlaces[0].location?.coordinates) {
+          const [lng, lat] = fetchedPlaces[0].location.coordinates;
+          setMapCenter([lat, lng]);
+        }
       }
     } catch (err) {
       toast.error('Could not load relationship places.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // LocationIQ / Nominatim Interactive Geocoding Search
+  const handleLocationSearch = async (e) => {
+    e.preventDefault();
+    if (!locationQuery.trim()) return;
+
+    setIsSearchingLocation(true);
+    try {
+      const res = await api.get(`/places/search-location?q=${encodeURIComponent(locationQuery)}`);
+      if (res.success && res.data?.results) {
+        setSearchResults(res.data.results);
+      }
+    } catch (err) {
+      toast.error('Location search unavailable.');
+    } finally {
+      setIsSearchingLocation(false);
+    }
+  };
+
+  const handleSelectLocation = (loc) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: prev.name || loc.name,
+      address: loc.address,
+      lat: loc.lat,
+      lng: loc.lng,
+    }));
+    setMapCenter([loc.lat, loc.lng]);
+    setSearchResults([]);
+    setLocationQuery('');
+    toast.success(`Location selected: ${loc.name}`);
   };
 
   const handleCreate = async (e) => {
@@ -67,6 +130,8 @@ const PlacesPage = () => {
         description: formData.description,
         category: formData.category,
         rating: Number(formData.rating),
+        lat: Number(formData.lat),
+        lng: Number(formData.lng),
         location: {
           type: 'Point',
           coordinates: [Number(formData.lng), Number(formData.lat)],
@@ -76,6 +141,7 @@ const PlacesPage = () => {
       if (res.success) {
         toast.success('Place pinned to relationship map!');
         setIsModalOpen(false);
+        setMapCenter([Number(formData.lat), Number(formData.lng)]);
         setFormData({ name: '', address: '', description: '', category: 'first_date', lat: 37.7749, lng: -122.4194, rating: 5 });
         fetchPlaces();
       }
@@ -84,25 +150,33 @@ const PlacesPage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  // Confirmation modal trigger
+  const confirmDeletePlace = (place) => {
+    setPlaceToDelete(place);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!placeToDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/places/${id}`);
+      await api.delete(`/places/${placeToDelete._id}`);
       toast.success('Place deleted.');
       fetchPlaces();
     } catch (err) {
       toast.error('Could not delete place.');
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setPlaceToDelete(null);
     }
   };
-
-  const defaultCenter = places.length > 0 && places[0].location?.coordinates
-    ? [places[0].location.coordinates[1], places[0].location.coordinates[0]]
-    : [37.7749, -122.4194];
 
   return (
     <div className="flex flex-col gap-6 pb-12">
       <SEO
-        title="Relationship Map — Pairly"
-        description="Map out special date spots, trips, and romantic milestones on an interactive map."
+        title="Interactive Relationship Map — Pairly"
+        description="Search locations and map out date spots on an interactive map."
       />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -111,7 +185,7 @@ const PlacesPage = () => {
             <MapPin className="w-8 h-8 text-rose-400" /> Relationship Map
           </h2>
           <p className="text-xs text-rose-200/60 mt-1">
-            Map out your special date spots, trips, and romantic milestones.
+            Search locations interactively and pin special date spots.
           </p>
         </div>
 
@@ -144,7 +218,8 @@ const PlacesPage = () => {
       {/* Map View */}
       {viewMode === 'map' ? (
         <div className="w-full h-[550px] rounded-3xl overflow-hidden glass-card border border-rose-500/30 shadow-2xl relative z-10">
-          <MapContainer center={defaultCenter} zoom={11} className="w-full h-full">
+          <MapContainer center={mapCenter} zoom={11} className="w-full h-full">
+            <MapController center={mapCenter} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -170,103 +245,152 @@ const PlacesPage = () => {
       ) : (
         /* List View */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {places.map((place) => (
-            <Card key={place._id} className="p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-rose-400 flex items-center gap-1 uppercase">
-                    <MapPin className="w-3.5 h-3.5" /> {place.category}
-                  </span>
-                  <button
-                    onClick={() => handleDelete(place._id)}
-                    className="p-1 text-white/30 hover:text-red-400 rounded cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+          {places.length === 0 ? (
+            <div className="col-span-full py-8 text-center text-rose-200/50">
+              No places pinned yet. Click "Pin New Spot" above to search location and pin your first spot!
+            </div>
+          ) : (
+            places.map((place) => (
+              <Card key={place._id} className="p-5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-rose-400 flex items-center gap-1 uppercase">
+                      <MapPin className="w-3.5 h-3.5" /> {place.category}
+                    </span>
+                    <button
+                      onClick={() => confirmDeletePlace(place)}
+                      className="p-1 text-white/30 hover:text-red-400 rounded cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mt-1">{place.name}</h3>
+                  <p className="text-xs text-rose-200/60 mt-1">{place.address}</p>
+                  {place.description && (
+                    <p className="text-sm text-rose-100/80 mt-2">{place.description}</p>
+                  )}
                 </div>
-                <h3 className="text-xl font-bold text-white mt-1">{place.name}</h3>
-                <p className="text-xs text-rose-200/60 mt-1">{place.address}</p>
-                {place.description && (
-                  <p className="text-sm text-rose-100/80 mt-2">{place.description}</p>
-                )}
-              </div>
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-                <span className="text-amber-400 text-xs flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> Rating: {place.rating}/5
-                </span>
-              </div>
-            </Card>
-          ))}
+                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-amber-400 text-xs flex items-center gap-1">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" /> Rating: {place.rating}/5
+                  </span>
+                </div>
+              </Card>
+            ))
+          )}
         </div>
       )}
 
-      {/* Add Modal */}
+      {/* Modal: Pin New Place */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Pin New Place">
-        <form onSubmit={handleCreate} className="flex flex-col gap-4">
-          <Input
-            label="Place Name"
-            placeholder="e.g. Rooftop Restaurant where we first met"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
+        <div className="flex flex-col gap-4">
+          {/* Geocoding Search Bar */}
+          <form onSubmit={handleLocationSearch} className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-rose-200/80 uppercase">Search Location</label>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Type city, restaurant, or address (e.g. Eiffel Tower)..."
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                icon={Search}
+              />
+              <Button type="submit" isLoading={isSearchingLocation} className="shrink-0 font-bold">
+                Search
+              </Button>
+            </div>
+          </form>
 
-          <Input
-            label="Address / Location"
-            placeholder="e.g. 123 Romantic Street, Paris"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-          />
+          {/* Location Search Dropdown Results */}
+          {searchResults.length > 0 && (
+            <div className="max-h-40 overflow-y-auto glass-card rounded-xl p-2 border border-rose-500/40 flex flex-col gap-1">
+              {searchResults.map((loc, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSelectLocation(loc)}
+                  className="p-2 text-left hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+                >
+                  <span className="text-xs font-bold text-white block truncate">{loc.name}</span>
+                  <span className="text-[10px] text-rose-200/60 block truncate">{loc.address}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleCreate} className="flex flex-col gap-4">
             <Input
-              label="Latitude"
-              type="number"
-              step="any"
-              value={formData.lat}
-              onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
+              label="Place Name"
+              placeholder="e.g. Bella Italia Restaurant"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
-            <Input
-              label="Longitude"
-              type="number"
-              step="any"
-              value={formData.lng}
-              onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
-              required
-            />
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-rose-200/80 uppercase">Category</label>
-            <select
+            <Input
+              label="Address"
+              placeholder="e.g. 123 Romantic Street, Paris"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                label="Latitude"
+                type="number"
+                step="any"
+                value={formData.lat}
+                onChange={(e) => setFormData({ ...formData, lat: e.target.value })}
+                required
+              />
+              <Input
+                label="Longitude"
+                type="number"
+                step="any"
+                value={formData.lng}
+                onChange={(e) => setFormData({ ...formData, lng: e.target.value })}
+                required
+              />
+            </div>
+
+            <CustomSelect
+              label="Category"
+              options={[
+                { label: 'First Date', value: 'first_date' },
+                { label: 'Restaurant / Cafe', value: 'restaurant' },
+                { label: 'Sunset Spot', value: 'sunset' },
+                { label: 'Vacation', value: 'vacation' },
+              ]}
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="glass-input w-full rounded-xl p-2.5 text-sm text-white bg-rose-950 focus:outline-none"
-            >
-              <option value="first_date">First Date</option>
-              <option value="restaurant">Restaurant / Cafe</option>
-              <option value="sunset">Sunset Spot</option>
-              <option value="vacation">Vacation</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-rose-200/80 uppercase">Story / Notes</label>
-            <textarea
-              rows={3}
-              placeholder="What made this place special?"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="glass-input w-full rounded-xl p-3 text-sm text-white placeholder-white/30 resize-none"
+              onChange={(val) => setFormData({ ...formData, category: val })}
             />
-          </div>
 
-          <Button type="submit" className="w-full mt-2 font-bold">
-            <MapPin className="w-4 h-4" /> Pin Spot to Map
-          </Button>
-        </form>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-rose-200/80 uppercase">Story / Notes</label>
+              <textarea
+                rows={3}
+                placeholder="What made this place special?"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                className="glass-input w-full rounded-xl p-3 text-sm text-white placeholder-white/30 resize-none"
+              />
+            </div>
+
+            <Button type="submit" className="w-full mt-2 font-bold">
+              <MapPin className="w-4 h-4" /> Pin Spot to Map
+            </Button>
+          </form>
+        </div>
       </Modal>
+
+      {/* Confirmation Modal for Place Deletion */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleExecuteDelete}
+        isLoading={isDeleting}
+        title="Delete Pinned Spot?"
+        message={`Are you sure you want to delete "${placeToDelete?.name || 'this spot'}" from your relationship map?`}
+        confirmText="Delete Spot"
+      />
     </div>
   );
 };

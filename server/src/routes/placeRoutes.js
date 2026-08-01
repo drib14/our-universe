@@ -10,6 +10,7 @@ router.use(auth, requireCouple);
 router.post('/', upload.array('media', 10), ctrl.createPlace);
 router.get('/', ctrl.getPlaces);
 router.get('/nearby', ctrl.getNearby);
+router.get('/search-location', ctrl.searchLocation);
 router.get('/:id', ctrl.getPlace);
 router.put('/:id', ctrl.updatePlace);
 router.delete('/:id', ctrl.deletePlace);

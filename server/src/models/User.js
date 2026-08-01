@@ -113,6 +113,16 @@ const userSchema = new mongoose.Schema(
         default: 'system',
       },
     },
+
+    // Scheduled Account Deletion (30 days inactivity grace period)
+    deletionScheduledAt: {
+      type: Date,
+      default: null,
+    },
+    deletionScheduledFor: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

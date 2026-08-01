@@ -132,7 +132,7 @@ const pairWithCode = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: `You're now connected with ${partner.name}!`,
-      data: { couple: populatedCouple },
+      data: { couple: populatedCouple, partner },
     });
   } catch (error) {
     next(error);
@@ -180,17 +180,30 @@ const getCouple = async (req, res, next) => {
     if (!req.user.coupleId) {
       return res.json({
         success: true,
-        data: { couple: null, isPaired: false },
+        data: { couple: null, partner: null, isPaired: false },
       });
     }
 
     const couple = await Couple.findById(req.user.coupleId)
-      .populate('partner1', 'name avatar email birthday bio')
-      .populate('partner2', 'name avatar email birthday bio');
+      .populate('partner1', 'name avatar email birthday bio pairCode')
+      .populate('partner2', 'name avatar email birthday bio pairCode');
+
+    if (!couple) {
+      return res.json({
+        success: true,
+        data: { couple: null, partner: null, isPaired: false },
+      });
+    }
+
+    // Determine partner user object
+    const partner =
+      couple.partner1 && couple.partner1._id.toString() === req.user._id.toString()
+        ? couple.partner2
+        : couple.partner1;
 
     res.json({
       success: true,
-      data: { couple, isPaired: true },
+      data: { couple, partner, isPaired: true },
     });
   } catch (error) {
     next(error);

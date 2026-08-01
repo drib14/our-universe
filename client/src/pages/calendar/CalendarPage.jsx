@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Plus, Clock, Gift, Heart, Sparkles, Cake, Wine, CalendarDays, Edit3, Trash2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Heart, Sparkles, Cake, Wine, CalendarDays, Edit3, Trash2 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import CustomSelect from '../../components/ui/CustomSelect';
+import CustomDatePicker from '../../components/ui/CustomDatePicker';
+import ConfirmModal from '../../components/ui/ConfirmModal';
 import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import useAuthStore from '../../stores/useAuthStore';
@@ -18,7 +21,7 @@ const CalendarPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-  const [dateModalType, setDateModalType] = useState('anniversary'); // anniversary | birthday
+  const [dateModalType, setDateModalType] = useState('anniversary');
   const [dateInputValue, setDateInputValue] = useState('');
 
   const [formData, setFormData] = useState({
@@ -26,6 +29,11 @@ const CalendarPage = () => {
     date: '',
     type: 'date_night',
   });
+
+  // Delete Confirmation State
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -45,7 +53,6 @@ const CalendarPage = () => {
     }
   };
 
-  // Dynamic Days Remaining Calculator for any future date in the year
   const calculateDaysRemaining = (targetDateString) => {
     if (!targetDateString) return null;
     const today = new Date();
@@ -65,14 +72,12 @@ const CalendarPage = () => {
   const anniversaryDays = calculateDaysRemaining(couple?.anniversaryDate || user?.relationshipStartDate);
   const partnerBirthdayDays = calculateDaysRemaining(partner?.birthday || user?.birthday);
 
-  // Find closest upcoming date night event from database
   const upcomingDateNight = events
     .filter((e) => e.type === 'date_night' && new Date(e.date) >= new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
 
   const dateNightDays = upcomingDateNight ? calculateDaysRemaining(upcomingDateNight.date) : null;
 
-  // Handle setting Anniversary / Birthday dates dynamically
   const handleSaveDate = async (e) => {
     e.preventDefault();
     if (!dateInputValue) return;
@@ -116,13 +121,24 @@ const CalendarPage = () => {
     }
   };
 
-  const handleDeleteEvent = async (id) => {
+  const confirmDeleteEvent = (evt) => {
+    setEventToDelete(evt);
+    setDeleteModalOpen(true);
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!eventToDelete) return;
+    setIsDeleting(true);
     try {
-      await api.delete(`/events/${id}`);
+      await api.delete(`/events/${eventToDelete._id}`);
       toast.success('Event removed.');
       fetchEvents();
     } catch (err) {
       toast.error('Could not delete event.');
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setEventToDelete(null);
     }
   };
 
@@ -280,8 +296,9 @@ const CalendarPage = () => {
                 </div>
               </div>
               <button
-                onClick={() => handleDeleteEvent(evt._id)}
+                onClick={() => confirmDeleteEvent(evt)}
                 className="p-2 text-white/30 hover:text-red-400 rounded-lg transition-colors cursor-pointer"
+                title="Delete Event"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -297,12 +314,10 @@ const CalendarPage = () => {
         title={dateModalType === 'anniversary' ? 'Set Relationship Anniversary Date' : 'Set Birthday'}
       >
         <form onSubmit={handleSaveDate} className="flex flex-col gap-4">
-          <Input
+          <CustomDatePicker
             label="Select Date"
-            type="date"
-            icon={CalendarIcon}
             value={dateInputValue}
-            onChange={(e) => setDateInputValue(e.target.value)}
+            onChange={(dateVal) => setDateInputValue(dateVal)}
             required
           />
           <Button type="submit" className="w-full font-bold mt-2">
@@ -321,31 +336,38 @@ const CalendarPage = () => {
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             required
           />
-          <Input
+          <CustomDatePicker
             label="Date"
-            type="date"
-            icon={CalendarIcon}
             value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            onChange={(dateVal) => setFormData({ ...formData, date: dateVal })}
             required
           />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-rose-200/80 uppercase">Event Type</label>
-            <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              className="glass-input w-full rounded-xl p-2.5 text-sm text-white bg-rose-950 focus:outline-none"
-            >
-              <option value="anniversary">Anniversary</option>
-              <option value="birthday">Birthday</option>
-              <option value="date_night">Date Night</option>
-            </select>
-          </div>
+          <CustomSelect
+            label="Event Type"
+            options={[
+              { label: 'Anniversary', value: 'anniversary' },
+              { label: 'Birthday', value: 'birthday' },
+              { label: 'Date Night', value: 'date_night' },
+            ]}
+            value={formData.type}
+            onChange={(typeVal) => setFormData({ ...formData, type: typeVal })}
+          />
           <Button type="submit" className="w-full mt-2 font-bold">
             Save Calendar Event
           </Button>
         </form>
       </Modal>
+
+      {/* Confirmation Modal for Event Deletion */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleExecuteDelete}
+        isLoading={isDeleting}
+        title="Delete Calendar Event?"
+        message={`Are you sure you want to delete "${eventToDelete?.title || 'this event'}" from your couple calendar?`}
+        confirmText="Delete Event"
+      />
     </div>
   );
 };

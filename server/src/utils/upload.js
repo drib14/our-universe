@@ -63,8 +63,8 @@ const uploadToCloudinary = (buffer, folder = 'pairly', resourceType = 'auto') =>
         public_id: uuidv4(),
         resource_type: resourceType,
         transformation:
-          resourceType === 'image'
-            ? [{ quality: 'auto', fetch_format: 'auto' }]
+          resourceType === 'image' || resourceType === 'auto'
+            ? [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto:good', fetch_format: 'auto' }]
             : undefined,
       },
       (error, result) => {

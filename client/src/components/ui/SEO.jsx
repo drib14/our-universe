@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 
 const SEO = ({
   title = 'Pairly — Premium Couples App & Private Relationship Sanctuary',
-  description = 'Pairly is the #1 private couples app for time-capsule letters, relationship timeline, daily mood check-ins, shared memories, map places, and couple quests.',
-  keywords = 'couples app, relationship app, future letters, relationship timeline, mood check-in, shared playlist, relationship map, couples quests',
+  description = 'Pairly is the #1 private couples app for time-capsule letters, relationship timeline, daily mood check-ins, shared memories, map places, and shared playlists.',
+  keywords = 'couples app, relationship app, future letters, relationship timeline, mood check-in, shared playlist, relationship map',
   canonicalUrl = 'https://pairly.app',
 }) => {
   useEffect(() => {

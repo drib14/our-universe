@@ -19,7 +19,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .font-romantic {
-  font-family: var(--font-handwriting);
+  font-family: var(--font-heading), var(--font-body), sans-serif;
 }
 
 /* Glassmorphism effects */

@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
+import CustomSelect from '../../components/ui/CustomSelect';
 import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -167,9 +168,11 @@ const SurprisesPage = () => {
               <Gift className="w-10 h-10" />
             </motion.div>
             <h3 className="text-2xl font-bold text-white">{selectedSurprise.title}</h3>
-            <p className="text-base text-rose-100 font-romantic text-2xl leading-relaxed">
-              {selectedSurprise.content}
-            </p>
+            <div className="w-full bg-white/5 p-5 rounded-2xl border border-rose-500/30 text-left my-2">
+              <p className="text-lg text-white font-medium leading-relaxed whitespace-pre-wrap">
+                {selectedSurprise.content}
+              </p>
+            </div>
 
             {selectedSurprise.coupon && (
               <div className="w-full p-4 rounded-2xl border-2 border-dashed border-rose-400 bg-rose-500/10 text-rose-200 text-center mt-2">
@@ -193,20 +196,12 @@ const SurprisesPage = () => {
             required
           />
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium text-rose-200/80 uppercase">Category</label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="glass-input w-full rounded-xl p-2.5 text-sm text-white bg-rose-950 focus:outline-none"
-            >
-              {SurpriseCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomSelect
+            label="Category"
+            options={SurpriseCategories.map((c) => ({ label: c.title, value: c.id }))}
+            value={formData.category}
+            onChange={(val) => setFormData({ ...formData, category: val })}
+          />
 
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-rose-200/80 uppercase">Secret Message / Content</label>
@@ -215,7 +210,7 @@ const SurprisesPage = () => {
               placeholder="Write your secret words or instructions..."
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              className="glass-input w-full rounded-xl p-3 text-sm text-white placeholder-white/30 resize-none font-romantic text-lg"
+              className="glass-input w-full rounded-xl p-3 text-sm text-white placeholder-white/30 resize-none font-sans"
               required
             />
           </div>
