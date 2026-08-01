@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MessageSquare, Send, Smile, Paperclip, Heart } from 'lucide-react';
+import { MessageSquare, Send, Heart } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
 import useAuthStore from '../../stores/useAuthStore';
@@ -85,6 +86,11 @@ const ChatPage = () => {
 
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-140px)] max-h-[750px]">
+      <SEO
+        title="Private Chat — Pairly"
+        description="Real-time messaging with your partner."
+      />
+
       {/* Header */}
       <Card className="p-4 flex items-center justify-between border-rose-500/30">
         <div className="flex items-center gap-3">
@@ -93,7 +99,7 @@ const ChatPage = () => {
           </div>
           <div>
             <h3 className="text-base font-bold text-white flex items-center gap-2">
-              {partner?.name || 'Partner'} 💕
+              {partner?.name || 'Partner'} <Heart className="w-4 h-4 text-rose-400 fill-rose-400 inline" />
             </h3>
             <span className="text-[11px] text-green-400 flex items-center gap-1 font-semibold">
               <span className="w-2 h-2 rounded-full bg-green-400 animate-ping" /> Live Connected
@@ -129,7 +135,7 @@ const ChatPage = () => {
 
         {isTyping && (
           <div className="self-start text-xs text-rose-300/60 font-semibold animate-pulse">
-            {partner?.name || 'Partner'} is typing love note...
+            {partner?.name || 'Partner'} is typing message...
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -138,7 +144,7 @@ const ChatPage = () => {
       {/* Message Input Bar */}
       <form onSubmit={handleSendMessage} className="flex gap-2">
         <Input
-          placeholder="Write a message to your love..."
+          placeholder="Write a message to your partner..."
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           containerClassName="flex-1"

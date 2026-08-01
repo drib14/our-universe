@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Unlock, ArrowLeft, Heart, Sparkles, Clock, Calendar } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Lock, ArrowLeft, Heart, Sparkles, Clock, Calendar, Smile, Flame, ThumbsUp } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+
+const reactionButtons = [
+  { id: 'heart', label: 'Heart', icon: Heart, color: 'text-rose-400 fill-rose-400' },
+  { id: 'sparkles', label: 'Sparkles', icon: Sparkles, color: 'text-amber-300 fill-amber-300' },
+  { id: 'smile', label: 'Smile', icon: Smile, color: 'text-green-400' },
+  { id: 'flame', label: 'Flame', icon: Flame, color: 'text-orange-400 fill-orange-400' },
+  { id: 'thumbsUp', label: 'Like', icon: ThumbsUp, color: 'text-blue-400' },
+];
 
 const ViewLetterPage = () => {
   const { id } = useParams();
@@ -50,11 +59,11 @@ const ViewLetterPage = () => {
     }, 1500);
   };
 
-  const handleReact = async (emoji) => {
+  const handleReact = async (reactionId) => {
     try {
-      const res = await api.post(`/letters/${id}/react`, { emoji });
+      const res = await api.post(`/letters/${id}/react`, { emoji: reactionId });
       if (res.success) {
-        toast.success(`Reacted with ${emoji}`);
+        toast.success(`Reaction added!`);
         fetchLetter();
       }
     } catch (err) {
@@ -74,10 +83,15 @@ const ViewLetterPage = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-12 max-w-3xl mx-auto">
+      <SEO
+        title={`${letter.title} — Pairly Capsule Letter`}
+        description="Time-capsule letter unsealing."
+      />
+
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/capsule-mail')}
-          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-rose-200 transition-colors"
+          className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-rose-200 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -99,7 +113,7 @@ const ViewLetterPage = () => {
             </p>
           </div>
           <div className="px-6 py-3 rounded-full bg-black/40 border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Locked Capsule — Patience is Love 💕
+            <Clock className="w-4 h-4" /> Locked Capsule — Patience is Love
           </div>
         </Card>
       ) : !isUnsealed ? (
@@ -107,17 +121,18 @@ const ViewLetterPage = () => {
           <motion.div
             animate={{ scale: isUnsealing ? [1, 1.2, 0.9, 1.3, 0] : 1 }}
             transition={{ duration: 1.2 }}
-            className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-red-600 border-4 border-amber-400 text-white flex items-center justify-center shadow-2xl shadow-rose-500/50 cursor-pointer"
+            className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-red-600 border-4 border-amber-400 text-white flex flex-col items-center justify-center shadow-2xl shadow-rose-500/50 cursor-pointer"
             onClick={handleUnseal}
           >
-            <span className="text-3xl font-extrabold font-serif">WAX</span>
+            <Lock className="w-8 h-8" />
+            <span className="text-[10px] font-extrabold tracking-widest uppercase mt-1">SEALED</span>
           </motion.div>
           <div>
             <h3 className="text-2xl font-bold text-white mb-1">{letter.title}</h3>
-            <p className="text-xs text-rose-200/60">Click the wax seal to unseal your letter</p>
+            <p className="text-xs text-rose-200/60">Click the seal to open your letter</p>
           </div>
           <Button onClick={handleUnseal} isLoading={isUnsealing} size="lg" className="font-bold">
-            Break Seal & Read 💌
+            Break Seal & Read Letter
           </Button>
         </Card>
       ) : (
@@ -141,19 +156,23 @@ const ViewLetterPage = () => {
               {letter.content}
             </div>
 
-            {/* Reaction Bar */}
+            {/* Reaction Bar with Lucide Icons */}
             <div className="mt-8 pt-4 border-t border-white/10 flex items-center justify-between">
               <span className="text-xs font-semibold text-rose-300/60">Reaction:</span>
               <div className="flex gap-2">
-                {['❤️', '🥹', '😭', '😍', '🫶'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReact(emoji)}
-                    className="p-2 text-xl rounded-xl hover:bg-white/10 transition-transform active:scale-125"
-                  >
-                    {emoji}
-                  </button>
-                ))}
+                {reactionButtons.map((rb) => {
+                  const Icon = rb.icon;
+                  return (
+                    <button
+                      key={rb.id}
+                      onClick={() => handleReact(rb.id)}
+                      className="p-2.5 rounded-xl bg-white/5 hover:bg-white/15 transition-transform active:scale-125 cursor-pointer"
+                      title={rb.label}
+                    >
+                      <Icon className={`w-5 h-5 ${rb.color}`} />
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </Card>
