@@ -14,7 +14,13 @@ export const getSocket = () => {
     socket = io(serverUrl, {
       auth: { token },
       autoConnect: false,
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 3,
+      timeout: 5000,
+    });
+
+    socket.on('connect_error', (err) => {
+      console.warn('[Socket.IO Note] Realtime socket server unavailable:', err.message);
     });
   }
   return socket;
