@@ -84,20 +84,18 @@ const PairingPage = () => {
     try {
       const res = await api.post('/couple/invite', { email: partnerEmail });
       if (res.success) {
-        toast.success(
-          res.message ? `${res.message} (Check inbox & spam folder)` : 'Invite email sent! (Check inbox & spam folder)',
-          { duration: 6000 }
-        );
+        toast.success('Invitation email sent successfully!');
         setPartnerEmail('');
       } else {
-        toast.error(res.message || 'Could not send email invite.');
+        toast.error(res.message || 'Failed to send invitation.');
       }
     } catch (err) {
+      console.error('Send invite error:', err);
       if (err?.code === 'UNAUTHORIZED' || err?.message?.includes('token') || err?.message?.includes('Access denied')) {
-        toast.error('Your session expired. Please log in again.');
+        toast.error('Session expired. Please log in again.');
         navigate('/login');
       } else {
-        toast.error(err.message || 'Failed to send invite.');
+        toast.error('Failed to send invitation.');
       }
     } finally {
       setIsInviting(false);

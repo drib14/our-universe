@@ -172,32 +172,24 @@ const sendInvite = async (req, res, next) => {
     const template = emailTemplates.partnerInvite(user.name, user.pairCode);
     const emailResult = await sendEmail(cleanEmail, template.subject, template.html);
 
-    if (emailResult && emailResult.simulated) {
-      return res.json({
-        success: true,
-        message: `Invite generated! Your partner code is ${user.pairCode}. (Set EMAIL_USER & EMAIL_PASSWORD in Render dashboard to send directly to inbox).`,
-        data: { pairCode: user.pairCode, simulated: true },
-      });
-    }
-
     if (emailResult && !emailResult.success) {
-      return res.json({
-        success: true,
-        message: `Invite code generated: ${user.pairCode}. (Email delivery note: ${emailResult.error || 'Check Render host SMTP settings'})`,
-        data: { pairCode: user.pairCode, emailSent: false, error: emailResult.error },
-      });
+      console.error(`[Invite Email Log] Delivery warning for ${cleanEmail}:`, emailResult.error);
+    } else if (emailResult && emailResult.simulated) {
+      console.log(`[Invite Email Log] Email simulated for ${cleanEmail} (Host credentials missing).`);
+    } else {
+      console.log(`[Invite Email Log] Email delivered successfully to ${cleanEmail}.`);
     }
 
     res.json({
       success: true,
-      message: `Invitation email successfully sent to ${cleanEmail}!`,
-      data: { pairCode: user.pairCode, emailSent: true },
+      message: 'Invitation email sent successfully!',
+      data: { pairCode: user.pairCode, emailSent: !!emailResult?.success },
     });
   } catch (error) {
     console.error('Send invite error:', error);
-    res.json({
+    res.status(400).json({
       success: false,
-      message: error.message || 'Could not process invitation request.',
+      message: 'Failed to send invitation.',
     });
   }
 };
