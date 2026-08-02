@@ -1,4 +1,4 @@
-# Render Infrastructure as Code Blueprint
+# Render Infrastructure as Code Blueprint — Frontend Only
 # https://render.com/docs/blueprint-spec
 
 services:
@@ -15,44 +15,7 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://pairly-backend.onrender.com/api
+        sync: false
       - key: VITE_SOCKET_URL
-        value: https://pairly-backend.onrender.com
+        sync: false
 
-  # ── BACKEND (Web Service) ──
-  # Name: pairly-backend (URL: https://pairly-backend.onrender.com)
-  - type: web
-    name: pairly-backend
-    env: node
-    region: singapore
-    plan: free
-    buildCommand: cd server && npm install --legacy-peer-deps
-    startCommand: cd server && node src/index.js
-    healthCheckPath: /
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: CLIENT_URL
-        value: https://pairly-web.onrender.com
-      - key: PORT
-        value: 10000
-      - key: MONGO_URI
-        sync: false
-      - key: ACCESS_TOKEN_SECRET
-        sync: false
-      - key: REFRESH_TOKEN_SECRET
-        sync: false
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: SPOTIFY_CLIENT_ID
-        sync: false
-      - key: SPOTIFY_CLIENT_SECRET
-        sync: false
-      - key: EMAIL_USER
-        sync: false
-      - key: EMAIL_PASSWORD
-        sync: false
