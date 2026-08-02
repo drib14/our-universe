@@ -1,36 +1,59 @@
 const nodemailer = require('nodemailer');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+/**
+ * Clean & Format Credentials
+ */
+const getEmailUser = () => (process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : '');
+const getEmailPassword = () => (process.env.EMAIL_PASSWORD ? process.env.EMAIL_PASSWORD.replace(/\s+/g, '') : '');
 
 /**
- * Send an email (non-blocking safe catch)
+ * Create Nodemailer Transporter for Gmail SMTP
  */
-const sendEmail = async (to, subject, html) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-    console.log(`[Email Simulation] To: ${to} | Subject: ${subject}`);
-    return;
-  }
-  try {
-    await transporter.sendMail({
-      from: `"Pairly" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    console.log(`Email sent to ${to}`);
-  } catch (error) {
-    console.error(`Email send failed: ${error.message}`);
-  }
+const createTransporter = () => {
+  const user = getEmailUser();
+  const pass = getEmailPassword();
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: {
+      user,
+      pass,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
 };
 
 /**
- * Exact App Logo SVG String for HTML Email Clients
+ * Send an email directly via SMTP (throws error on failure so callers handle errors properly)
+ */
+const sendEmail = async (to, subject, html) => {
+  const user = getEmailUser();
+  const pass = getEmailPassword();
+
+  if (!user || !pass) {
+    throw new Error('Email missing configuration: EMAIL_USER or EMAIL_PASSWORD environment variables are not set.');
+  }
+
+  const transporter = createTransporter();
+
+  const info = await transporter.sendMail({
+    from: `"Pairly — Private Sanctuary" <${user}>`,
+    to: to.trim(),
+    subject,
+    html,
+  });
+
+  console.log(`[SMTP Email Sent] Message ID: ${info.messageId} -> ${to}`);
+  return info;
+};
+
+/**
+ * App Logo SVG for HTML Email Templates
  */
 const platformLogoSvg = `
 <svg width="52" height="52" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; display: inline-block;">
@@ -70,9 +93,9 @@ const renderEmailWrapper = (title, contentHtml) => `
   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background: radial-gradient(circle at 50% 0%, #31102b 0%, #150517 60%, #0c020d 100%); padding: 40px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="email-container" style="max-width: 580px; width: 100%; background: linear-gradient(165deg, rgba(49, 16, 43, 0.95) 0%, rgba(21, 5, 23, 0.98) 60%, rgba(12, 2, 13, 1) 100%); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 28px; padding: 36px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(244, 63, 94, 0.15);">
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="email-container" style="max-width: 580px; width: 100%; background: linear-gradient(165deg, rgba(49, 16, 43, 0.95) 0%, rgba(21, 5, 23, 0.98) 60%, rgba(12, 2, 13, 1) 100%); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 28px; padding: 36px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(244, 63, 94, 0.15);">
           
-          <!-- Header with Actual App Logo -->
+          <!-- Header with App Logo -->
           <tr>
             <td align="center" style="padding-bottom: 28px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
               <table role="presentation" border="0" cellpadding="0" cellspacing="0">
@@ -82,7 +105,7 @@ const renderEmailWrapper = (title, contentHtml) => `
                   </td>
                   <td align="left" style="vertical-align: middle;">
                     <span style="font-size: 30px; font-weight: 800; color: #ffffff; letter-spacing: -0.5px; display: block; line-height: 1;">Pairly</span>
-                    <span style="font-size: 10px; font-weight: 700; color: #fda4af; text-transform: uppercase; letter-spacing: 3px; display: block; margin-top: 3px;">Our Universe</span>
+                    <span style="font-size: 10px; font-weight: 700; color: #fda4af; text-transform: uppercase; letter-spacing: 3px; display: block; margin-top: 3px;">Our Private Sanctuary</span>
                   </td>
                 </tr>
               </table>
@@ -100,7 +123,7 @@ const renderEmailWrapper = (title, contentHtml) => `
           <tr>
             <td align="center" style="padding-top: 32px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 12px; color: rgba(253, 164, 175, 0.6); line-height: 1.5;">
               Crafted with care for couples everywhere.<br>
-              <strong style="color: rgba(255, 255, 255, 0.8);">Pairly — Private Relationship Sanctuary</strong>
+              <strong style="color: rgba(255, 255, 255, 0.85);">Pairly — Private Relationship Sanctuary</strong>
             </td>
           </tr>
 
@@ -113,35 +136,44 @@ const renderEmailWrapper = (title, contentHtml) => `
 `;
 
 /**
- * Styled Email Templates matching the Pairly App Theme
+ * Styled Email Templates matching the Pairly Romantic Glassmorphism Design
  */
 const emailTemplates = {
-  partnerInvite: (senderName, inviteCode) => ({
-    subject: `${senderName} invited you to connect on Pairly 💕`,
-    html: renderEmailWrapper(
-      'Partner Invitation',
-      `
-      <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">You've Been Invited! 💕</h2>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
-        <strong style="color: #f43f5e;">${senderName}</strong> wants to connect with you on Pairly — your private relationship sanctuary to store time-capsule letters, memory maps, mood check-ins, and couple quests.
-      </p>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
-        Open Pairly and enter your partner's unique invite code:
-      </p>
-      
-      <!-- Code Badge Box -->
-      <div style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(147, 51, 234, 0.15)); border: 2px dashed rgba(244, 63, 94, 0.4); border-radius: 20px; padding: 24px; text-align: center; margin: 24px 0;">
-        <span class="code-badge" style="font-size: 36px; font-weight: 800; font-family: 'Courier New', Courier, monospace; color: #ffffff; letter-spacing: 8px; text-shadow: 0 0 15px rgba(244, 63, 94, 0.6);">${inviteCode}</span>
-      </div>
+  partnerInvite: (senderName, inviteCode) => {
+    const baseUrl = process.env.CLIENT_URL || 'http://localhost:8081';
+    const pairUrl = `${baseUrl.replace(/\/$/, '')}/pair?code=${inviteCode}`;
 
-      <div style="text-align: center; margin-top: 28px; margin-bottom: 16px;">
-        <a href="https://pairly-web.onrender.com/pair" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
-          Connect & Pair Accounts Now →
-        </a>
-      </div>
-      `
-    ),
-  }),
+    return {
+      subject: `${senderName} invited you to connect on Pairly 💕`,
+      html: renderEmailWrapper(
+        'Partner Invitation',
+        `
+        <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">You've Been Invited! 💕</h2>
+        <p style="color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+          <strong style="color: #f43f5e;">${senderName}</strong> wants to connect with you on <strong>Pairly</strong> — your private relationship sanctuary to seal time-capsule letters, pin date spots on your story map, track moods, and build your shared story together.
+        </p>
+        <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+          Use your partner's unique invitation code below to link your accounts:
+        </p>
+        
+        <!-- Code Badge Box -->
+        <div style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(147, 51, 234, 0.18)); border: 2px dashed rgba(244, 63, 94, 0.5); border-radius: 20px; padding: 24px; text-align: center; margin: 24px 0;">
+          <span style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #fda4af; display: block; margin-bottom: 8px; letter-spacing: 2px;">Your Partner's Invite Code</span>
+          <span class="code-badge" style="font-size: 38px; font-weight: 800; font-family: 'Courier New', Courier, monospace; color: #ffffff; letter-spacing: 8px; text-shadow: 0 0 15px rgba(244, 63, 94, 0.6);">${inviteCode}</span>
+        </div>
+
+        <div style="text-align: center; margin-top: 28px; margin-bottom: 20px;">
+          <a href="${pairUrl}" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
+            Connect & Pair Accounts Now →
+          </a>
+        </div>
+        <p style="color: rgba(253, 164, 175, 0.6); font-size: 12px; text-align: center; margin-top: 12px;">
+          Or copy your code <strong style="color: #ffffff;">${inviteCode}</strong> and enter it on the pairing page.
+        </p>
+        `
+      ),
+    };
+  },
 
   passwordReset: (name, code) => ({
     subject: 'Reset your Pairly password 🔑',
@@ -149,12 +181,12 @@ const emailTemplates = {
       'Password Reset Code',
       `
       <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Reset Password Code 🔑</h2>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+      <p style="color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
         Hello <strong style="color: #ffffff;">${name}</strong>, use the 6-digit verification code below to reset your Pairly account password:
       </p>
 
       <!-- Code Badge Box -->
-      <div style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.15), rgba(147, 51, 234, 0.15)); border: 2px dashed rgba(244, 63, 94, 0.4); border-radius: 20px; padding: 24px; text-align: center; margin: 24px 0;">
+      <div style="background: linear-gradient(135deg, rgba(244, 63, 94, 0.18), rgba(147, 51, 234, 0.18)); border: 2px dashed rgba(244, 63, 94, 0.5); border-radius: 20px; padding: 24px; text-align: center; margin: 24px 0;">
         <span class="code-badge" style="font-size: 38px; font-weight: 800; font-family: 'Courier New', Courier, monospace; color: #ffffff; letter-spacing: 8px; text-shadow: 0 0 15px rgba(244, 63, 94, 0.6);">${code}</span>
       </div>
 
@@ -171,15 +203,15 @@ const emailTemplates = {
       'Capsule Letter Unlocked',
       `
       <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Time Capsule Unlocked! 💌</h2>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+      <p style="color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
         Hello <strong style="color: #ffffff;">${receiverName}</strong>,
       </p>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
+      <p style="color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.6; margin-bottom: 20px;">
         <strong style="color: #f43f5e;">${senderName}</strong> wrote a time-capsule letter titled "<span style="color: #ffffff; font-weight: 700;">${letterTitle}</span>" — and the time has come to open it!
       </p>
 
       <div style="text-align: center; margin-top: 28px; margin-bottom: 16px;">
-        <a href="https://pairly-web.onrender.com/capsule-mail" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
+        <a href="${(process.env.CLIENT_URL || 'http://localhost:8081').replace(/\/$/, '')}/capsule-mail" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
           Break Seal & Read Letter →
         </a>
       </div>
@@ -193,15 +225,15 @@ const emailTemplates = {
       'Welcome to Pairly',
       `
       <h2 style="color: #ffffff; font-size: 24px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">Welcome to Pairly! ✨</h2>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
+      <p style="color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.6; margin-bottom: 16px;">
         Hi <strong style="color: #ffffff;">${name}</strong>, your private relationship sanctuary has been created!
       </p>
-      <p style="color: rgba(255, 255, 255, 0.85); font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
-        You can now pair with your partner to seal time-capsule letters, pin date spots on your relationship map, check in daily moods, and build your shared story together.
+      <p style="color: rgba(255, 255, 255, 0.88); font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+        You can now pair with your partner to seal time-capsule letters, pin date spots on your story map, check in daily moods, and build your shared story together.
       </p>
       
       <div style="text-align: center; margin-top: 28px; margin-bottom: 16px;">
-        <a href="https://pairly-web.onrender.com/pair" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 32px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
+        <a href="${(process.env.CLIENT_URL || 'http://localhost:8081').replace(/\/$/, '')}/pair" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
           Start Pairing Now →
         </a>
       </div>

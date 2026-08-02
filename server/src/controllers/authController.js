@@ -40,10 +40,9 @@ const register = async (req, res, next) => {
       isVerified: true,
     });
 
-    // Send warm welcome email (optional non-blocking)
-    const welcomeSubject = 'Welcome to Pairly — Your Private Universe';
-    const welcomeHtml = `<div style="font-family: sans-serif; padding: 20px; background: #0c020d; color: #ffffff;"><h2>Welcome to Pairly, ${name}!</h2><p>Your private relationship space is ready. Share your pair code <strong>${pairCode}</strong> with your partner to get started.</p></div>`;
-    sendEmail(email, welcomeSubject, welcomeHtml).catch((err) =>
+    // Send warm welcome email
+    const welcomeTpl = emailTemplates.welcomeEmail(name);
+    sendEmail(email, welcomeTpl.subject, welcomeTpl.html).catch((err) =>
       console.error('Welcome email send failed:', err.message)
     );
 

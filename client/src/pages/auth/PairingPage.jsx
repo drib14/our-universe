@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Copy, Check, Send, Sparkles, Link2, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -13,6 +13,7 @@ import useCoupleStore from '../../stores/useCoupleStore';
 
 const PairingPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
   const { isPaired, fetchCouple } = useCoupleStore();
 
@@ -27,6 +28,13 @@ const PairingPage = () => {
       navigate('/');
     }
   }, [isPaired, navigate]);
+
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl) {
+      setPairCode(codeFromUrl.toUpperCase());
+    }
+  }, [searchParams]);
 
   const copyCode = () => {
     if (user?.pairCode) {

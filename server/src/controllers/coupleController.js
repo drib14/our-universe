@@ -148,6 +148,15 @@ const sendInvite = async (req, res, next) => {
     const { email } = req.body;
     const user = req.user;
 
+    if (!email || typeof email !== 'string' || !email.trim().includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a valid email address.',
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
     if (user.coupleId) {
       return res.status(400).json({
         success: false,
@@ -161,14 +170,18 @@ const sendInvite = async (req, res, next) => {
     }
 
     const template = emailTemplates.partnerInvite(user.name, user.pairCode);
-    await sendEmail(email, template.subject, template.html);
+    await sendEmail(cleanEmail, template.subject, template.html);
 
     res.json({
       success: true,
-      message: `Invite sent to ${email}!`,
+      message: `Invitation email successfully sent to ${cleanEmail}!`,
     });
   } catch (error) {
-    next(error);
+    console.error('Send invite email error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to send invitation email.',
+    });
   }
 };
 
