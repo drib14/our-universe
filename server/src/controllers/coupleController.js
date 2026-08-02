@@ -170,7 +170,15 @@ const sendInvite = async (req, res, next) => {
     }
 
     const template = emailTemplates.partnerInvite(user.name, user.pairCode);
-    await sendEmail(cleanEmail, template.subject, template.html);
+    const emailResult = await sendEmail(cleanEmail, template.subject, template.html);
+
+    if (emailResult && emailResult.simulated) {
+      return res.json({
+        success: true,
+        message: `Invitation code generated for ${cleanEmail}! (Note: Add EMAIL_USER & EMAIL_PASSWORD in Render dashboard to deliver emails to inbox)`,
+        data: { pairCode: user.pairCode, simulated: true },
+      });
+    }
 
     res.json({
       success: true,
@@ -178,7 +186,7 @@ const sendInvite = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Send invite email error:', error);
-    res.status(500).json({
+    res.status(400).json({
       success: false,
       message: error.message || 'Failed to send invitation email.',
     });
