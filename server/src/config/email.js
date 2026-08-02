@@ -9,7 +9,7 @@ const getEmailPassword = () => (process.env.EMAIL_PASSWORD ? process.env.EMAIL_P
 /**
  * Create Nodemailer Transporter for Gmail SMTP
  */
-const createTransporter = (port = 465, secure = true) => {
+const createTransporter = () => {
   const user = getEmailUser();
   const pass = getEmailPassword();
 
@@ -18,9 +18,7 @@ const createTransporter = (port = 465, secure = true) => {
   }
 
   return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port,
-    secure,
+    service: 'gmail',
     auth: {
       user,
       pass,
@@ -28,54 +26,42 @@ const createTransporter = (port = 465, secure = true) => {
     tls: {
       rejectUnauthorized: false,
     },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
+    connectionTimeout: 12000,
+    greetingTimeout: 12000,
+    socketTimeout: 12000,
   });
 };
 
 /**
- * Send an email directly via SMTP with fallback port support for Render / Cloud hosting
+ * Send an email safely — returns a result object rather than throwing HTTP crash errors
  */
 const sendEmail = async (to, subject, html) => {
   const user = getEmailUser();
   const pass = getEmailPassword();
 
   if (!user || !pass) {
-    console.warn(`[Email Info] EMAIL_USER or EMAIL_PASSWORD missing in host environment. Logging email attempt for ${to}`);
+    console.warn(`[Email Info] EMAIL_USER or EMAIL_PASSWORD missing in host environment. Simulating delivery to ${to}`);
     return { simulated: true, to, subject };
   }
 
-  const primaryTransporter = createTransporter(465, true);
+  const transporter = createTransporter();
+  if (!transporter) {
+    return { simulated: true, to, subject };
+  }
 
   try {
-    const info = await primaryTransporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Pairly — Private Sanctuary" <${user}>`,
       to: to.trim(),
       subject,
       html,
     });
 
-    console.log(`[SMTP Email Sent (465)] Message ID: ${info.messageId} -> ${to}`);
-    return info;
-  } catch (primaryErr) {
-    console.warn(`[SMTP Warning] Port 465 SSL attempt failed (${primaryErr.message}). Retrying via Port 587 (TLS)...`);
-    
-    try {
-      const fallbackTransporter = createTransporter(587, false);
-      const fallbackInfo = await fallbackTransporter.sendMail({
-        from: `"Pairly — Private Sanctuary" <${user}>`,
-        to: to.trim(),
-        subject,
-        html,
-      });
-
-      console.log(`[SMTP Email Sent (587 Fallback)] Message ID: ${fallbackInfo.messageId} -> ${to}`);
-      return fallbackInfo;
-    } catch (fallbackErr) {
-      console.error(`[SMTP Error] Both Port 465 & Port 587 failed: ${fallbackErr.message}`);
-      throw new Error(`SMTP Email Delivery Failed: ${fallbackErr.message}`);
-    }
+    console.log(`[SMTP Email Delivered] Message ID: ${info.messageId} -> ${to}`);
+    return { success: true, messageId: info.messageId };
+  } catch (err) {
+    console.error(`[SMTP Email Error] Could not deliver email to ${to}: ${err.message}`);
+    return { success: false, error: err.message };
   }
 };
 
