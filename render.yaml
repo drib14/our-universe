@@ -4,7 +4,7 @@
 services:
   # ── FRONTEND (Static Site) ──
   # Name: pairly (URL: https://pairly.onrender.com)
-  - type: static
+  - type: web
     name: pairly
     env: static
     buildCommand: cd client && npm install && npm run build
