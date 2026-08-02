@@ -146,6 +146,7 @@ const searchTracks = async (req, res, next) => {
       }
     }
 
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.json({ success: true, data: { tracks } });
   } catch (error) {
     next(error);

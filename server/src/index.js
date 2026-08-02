@@ -41,6 +41,8 @@ const corsOptions = {
 
 // Initialize Express
 const app = express();
+app.set('trust proxy', 1);
+app.disable('etag');
 const server = http.createServer(app);
 
 // Initialize Socket.IO
