@@ -20,6 +20,7 @@ try {
 
 const allowedOrigins = [
   process.env.CLIENT_URL,
+  'https://pairly-web.onrender.com',
   'https://pairly.onrender.com',
   'http://localhost:5173',
   'http://localhost:3000',

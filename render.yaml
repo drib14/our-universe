@@ -3,9 +3,9 @@
 
 services:
   # ── FRONTEND (Static Site) ──
-  # Name: pairly (URL: https://pairly.onrender.com)
+  # Name: pairly-web (URL: https://pairly-web.onrender.com)
   - type: web
-    name: pairly
+    name: pairly-web
     env: static
     buildCommand: cd client && npm install --legacy-peer-deps && npm run build
     staticPublishPath: client/dist
@@ -33,7 +33,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: CLIENT_URL
-        value: https://pairly.onrender.com
+        value: https://pairly-web.onrender.com
       - key: PORT
         value: 10000
       - key: MONGO_URI
