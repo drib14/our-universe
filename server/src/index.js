@@ -23,20 +23,34 @@ const allowedOrigins = [
   'https://pairly-web.onrender.com',
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:8081',
   'http://127.0.0.1:5173',
+  'http://127.0.0.1:8081',
 ].filter(Boolean);
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  const cleanOrigin = origin.replace(/\/$/, '');
+  if (allowedOrigins.some((o) => o && o.replace(/\/$/, '') === cleanOrigin)) return true;
+  try {
+    const hostname = new URL(origin).hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.onrender.com')) {
+      return true;
+    }
+  } catch (e) {}
+  return process.env.NODE_ENV !== 'production';
+};
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, server-to-server)
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
-    return callback(new Error('CORS Policy restriction: Origin not allowed.'));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 };
 
 // Initialize Express
@@ -55,13 +69,14 @@ const io = new Server(server, {
 initializeSocket(io);
 
 // ── MIDDLEWARE ──
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(
   helmet({
     contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
-app.use(cors(corsOptions));
 if (mongoSanitize) {
   app.use(mongoSanitize());
 }
