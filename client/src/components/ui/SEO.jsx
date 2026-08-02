@@ -4,7 +4,7 @@ const SEO = ({
   title = 'Pairly — Premium Couples App & Private Relationship Sanctuary',
   description = 'Pairly is the #1 private couples app for time-capsule letters, relationship timeline, daily mood check-ins, shared memories, map places, and shared playlists.',
   keywords = 'couples app, relationship app, future letters, relationship timeline, mood check-in, shared playlist, relationship map',
-  canonicalUrl = 'https://pairly.app',
+  canonicalUrl = 'https://pairly-web.onrender.com',
 }) => {
   useEffect(() => {
     // Dynamic document title
