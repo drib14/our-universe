@@ -11,16 +11,42 @@ const errorHandler = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimiter');
 const { initializeSocket } = require('./socket/chatHandler');
 
+let mongoSanitize;
+try {
+  mongoSanitize = require('express-mongo-sanitize');
+} catch (e) {
+  mongoSanitize = () => (req, res, next) => next();
+}
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://pairly.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://pairly.app',
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS Policy restriction: Origin not allowed.'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 // Initialize Express
 const app = express();
 const server = http.createServer(app);
 
 // Initialize Socket.IO
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
+  cors: corsOptions,
   transports: ['websocket', 'polling'],
 });
 
@@ -28,8 +54,16 @@ const io = new Server(server, {
 initializeSocket(io);
 
 // ── MIDDLEWARE ──
-app.use(helmet());
-app.use(cors({ origin: '*', credentials: true }));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+app.use(cors(corsOptions));
+if (mongoSanitize) {
+  app.use(mongoSanitize());
+}
 app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));

@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import Avatar from '../../components/ui/Avatar';
 import CustomDatePicker from '../../components/ui/CustomDatePicker';
 import ConfirmModal from '../../components/ui/ConfirmModal';
+import SEO from '../../components/ui/SEO';
 import useAuthStore from '../../stores/useAuthStore';
 import useCoupleStore from '../../stores/useCoupleStore';
 import api from '../../lib/api';
@@ -129,6 +130,10 @@ const SettingsPage = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-12 w-full">
+      <SEO
+        title="Account Settings — Pairly"
+        description="Manage your profile, partner pairing connection, and account security settings."
+      />
       {/* Header */}
       <div>
         <h2 className="text-3xl font-extrabold text-white flex items-center gap-3">

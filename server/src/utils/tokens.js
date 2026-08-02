@@ -41,17 +41,17 @@ const hashToken = (token) => {
 };
 
 /**
- * Generate a 6-digit pairing code
+ * Generate a 6-digit pairing code (cryptographically secure)
  */
 const generatePairCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 /**
- * Generate a 6-digit verification code
+ * Generate a 6-digit verification code (cryptographically secure)
  */
 const generateVerificationCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 module.exports = {

@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import Logo from '../../components/ui/Logo';
+import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import useAuthStore from '../../stores/useAuthStore';
 import useCoupleStore from '../../stores/useCoupleStore';
@@ -122,6 +123,10 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      <SEO
+        title="Log In — Pairly Private Sanctuary"
+        description="Log in to access your shared relationship sanctuary, letters, memory timeline, and chat."
+      />
       <div className="absolute w-96 h-96 bg-rose-500/20 rounded-full blur-3xl pointer-events-none" />
 
       <motion.div

@@ -1,0 +1,54 @@
+# Render Infrastructure as Code Blueprint
+# https://render.com/docs/blueprint-spec
+
+services:
+  # ── FRONTEND (Static Site) ──
+  # Name: pairly (URL: https://pairly.onrender.com)
+  - type: static
+    name: pairly
+    env: static
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: client/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        value: https://pairly-backend.onrender.com/api
+      - key: VITE_SOCKET_URL
+        value: https://pairly-backend.onrender.com
+
+  # ── BACKEND (Web Service) ──
+  # Name: pairly-backend (URL: https://pairly-backend.onrender.com)
+  - type: web
+    name: pairly-backend
+    env: node
+    region: singapore
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && node src/index.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        value: https://pairly.onrender.com
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: ACCESS_TOKEN_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false

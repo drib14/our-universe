@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from '../ui/Navbar';
 import Sidebar from '../ui/Sidebar';
+import MobileNav from '../ui/MobileNav';
 import Logo from '../ui/Logo';
 import useAuthStore from '../../stores/useAuthStore';
 import useCoupleStore from '../../stores/useCoupleStore';
@@ -34,7 +35,7 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 text-white flex flex-col w-full">
+    <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 text-white flex flex-col w-full pb-16 lg:pb-0">
       <Navbar />
       <div className="flex flex-1 w-full">
         <Sidebar />
@@ -42,6 +43,7 @@ const AppLayout = () => {
           <Outlet />
         </main>
       </div>
+      <MobileNav />
     </div>
   );
 };

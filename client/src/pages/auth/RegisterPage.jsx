@@ -5,6 +5,8 @@ import { User, Mail, Lock, Calendar, AlertCircle, Sparkles, Heart } from 'lucide
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Logo from '../../components/ui/Logo';
+import CustomDatePicker from '../../components/ui/CustomDatePicker';
+import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import useAuthStore from '../../stores/useAuthStore';
 
@@ -59,6 +61,10 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      <SEO
+        title="Create Account — Pairly Private Sanctuary"
+        description="Join Pairly to build your private couples sanctuary, seal future capsule letters, track milestones, and share daily moods."
+      />
       <div className="absolute w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
 
       {/* Registration Box */}
@@ -114,13 +120,11 @@ const RegisterPage = () => {
             required
           />
 
-          <Input
+          <CustomDatePicker
             label="Relationship Anniversary / Start Date"
-            name="relationshipStartDate"
-            type="date"
-            icon={Calendar}
             value={formData.relationshipStartDate}
-            onChange={handleChange}
+            onChange={(val) => setFormData({ ...formData, relationshipStartDate: val })}
+            placeholder="Select your anniversary date"
           />
 
           <Button type="submit" isLoading={isLoading} className="w-full py-3 text-base font-bold mt-2">

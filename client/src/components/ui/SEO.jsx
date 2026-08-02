@@ -31,7 +31,16 @@ const SEO = ({
     updateMetaTag('meta[property="og:description"]', 'content', description);
     updateMetaTag('meta[property="twitter:title"]', 'content', title);
     updateMetaTag('meta[property="twitter:description"]', 'content', description);
-  }, [title, description, keywords]);
+
+    // Update canonical link tag
+    let canonicalTag = document.querySelector('link[rel="canonical"]');
+    if (!canonicalTag) {
+      canonicalTag = document.createElement('link');
+      canonicalTag.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalTag);
+    }
+    canonicalTag.setAttribute('href', canonicalUrl);
+  }, [title, description, keywords, canonicalUrl]);
 
   return null;
 };

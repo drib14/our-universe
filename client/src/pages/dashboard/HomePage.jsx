@@ -15,6 +15,7 @@ import {
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Logo from '../../components/ui/Logo';
+import SEO from '../../components/ui/SEO';
 import useAuthStore from '../../stores/useAuthStore';
 import useCoupleStore from '../../stores/useCoupleStore';
 
@@ -74,6 +75,10 @@ const HomePage = () => {
 
   return (
     <div className="flex flex-col gap-8 pb-12">
+      <SEO
+        title={`Dashboard — ${user?.name || 'Couple'} & ${partner?.name || 'Partner'}'s Sanctuary | Pairly`}
+        description="Overview of your private couples dashboard, days together counter, time-capsule letters, mood check-ins, and relationship memories."
+      />
       {/* Hero Days Together Banner */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}

@@ -6,6 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import CustomDatePicker from '../../components/ui/CustomDatePicker';
+import SEO from '../../components/ui/SEO';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -47,6 +48,10 @@ const ComposeLetterPage = () => {
 
   return (
     <div className="flex flex-col gap-6 pb-12 max-w-3xl mx-auto">
+      <SEO
+        title="Compose Capsule Letter — Pairly"
+        description="Write a future love letter sealed in a time capsule for your partner."
+      />
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(-1)}

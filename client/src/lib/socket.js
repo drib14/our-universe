@@ -5,8 +5,11 @@ let socket = null;
 export const getSocket = () => {
   if (!socket) {
     const token = localStorage.getItem('pairly_token');
-    // Connect directly to backend server on port 5000
-    const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '/';
+    const serverUrl =
+      import.meta.env.VITE_SOCKET_URL ||
+      (window.location.hostname === 'localhost'
+        ? 'http://localhost:5000'
+        : 'https://pairly-backend.onrender.com');
     socket = io(serverUrl, {
       auth: { token },
       autoConnect: false,

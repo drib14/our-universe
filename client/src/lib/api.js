@@ -2,7 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../stores/useAuthStore';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -31,7 +31,10 @@ api.interceptors.response.use(
 
       if (refreshToken) {
         try {
-          const res = await axios.post('/api/auth/refresh', { refreshToken });
+          const refreshUrl = import.meta.env.VITE_API_URL
+            ? `${import.meta.env.VITE_API_URL}/auth/refresh`
+            : '/api/auth/refresh';
+          const res = await axios.post(refreshUrl, { refreshToken });
           if (res.data.success && res.data.data.accessToken) {
             const newToken = res.data.data.accessToken;
             localStorage.setItem('pairly_token', newToken);
