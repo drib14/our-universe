@@ -40,7 +40,7 @@ const authCallback = async (req, res, next) => {
   }
 };
 
-// Search music tracks (Spotify Web API with resilient iTunes API fallback for guaranteed 30s previews)
+// Search music tracks (Universal multi-stage search with iTunes & Spotify API fallbacks)
 const searchTracks = async (req, res, next) => {
   try {
     const { q, limit = 10 } = req.query;
@@ -48,10 +48,78 @@ const searchTracks = async (req, res, next) => {
       return res.json({ success: true, data: { tracks: [] } });
     }
 
+    const searchTerm = q.trim();
     let tracks = [];
 
-    // Attempt 1: Try Spotify Web API if client credentials exist in environment
+    // Stage 1: Primary Universal iTunes API Search (Guaranteed 30s audio previews & zero API key requirement)
+    try {
+      const iTunesRes = await fetch(
+        `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&media=music&entity=song&limit=${limit}`,
+        {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            Accept: 'application/json',
+          },
+        }
+      );
+
+      if (iTunesRes.ok) {
+        const data = await iTunesRes.json();
+        if (data.results && data.results.length > 0) {
+          tracks = data.results.map((t) => ({
+            spotifyId: String(t.trackId),
+            title: t.trackName,
+            artist: t.artistName,
+            albumArt: t.artworkUrl100 ? t.artworkUrl100.replace('100x100bb', '600x600bb') : '',
+            spotifyUri: t.trackViewUrl || '',
+            previewUrl: t.previewUrl || '',
+            duration: t.trackTimeMillis || 0,
+          }));
+        }
+      }
+    } catch (iTunesErr) {
+      // Continue to stage 2
+    }
+
+    // Stage 2: Broad iTunes API Search if Stage 1 yielded 0 results
+    if (tracks.length === 0) {
+      try {
+        const broadRes = await fetch(
+          `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&limit=${limit}`,
+          {
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              Accept: 'application/json',
+            },
+          }
+        );
+
+        if (broadRes.ok) {
+          const data = await broadRes.json();
+          if (data.results && data.results.length > 0) {
+            tracks = data.results
+              .filter((t) => t.trackName || t.collectionName)
+              .map((t) => ({
+                spotifyId: String(t.trackId || t.collectionId || Date.now()),
+                title: t.trackName || t.collectionName || searchTerm,
+                artist: t.artistName || 'Unknown Artist',
+                albumArt: t.artworkUrl100 ? t.artworkUrl100.replace('100x100bb', '600x600bb') : '',
+                spotifyUri: t.trackViewUrl || t.collectionViewUrl || '',
+                previewUrl: t.previewUrl || '',
+                duration: t.trackTimeMillis || 0,
+              }));
+          }
+        }
+      } catch (err) {
+        // Continue to stage 3
+      }
+    }
+
+    // Stage 3: Spotify Web API if configured & needed
     if (
+      tracks.length === 0 &&
       process.env.SPOTIFY_CLIENT_ID &&
       process.env.SPOTIFY_CLIENT_SECRET &&
       process.env.SPOTIFY_CLIENT_ID !== 'your_spotify_client_id'
@@ -61,7 +129,7 @@ const searchTracks = async (req, res, next) => {
         const authData = await spotifyApi.clientCredentialsGrant();
         spotifyApi.setAccessToken(authData.body['access_token']);
 
-        const results = await spotifyApi.searchTracks(q, { limit: parseInt(limit) });
+        const results = await spotifyApi.searchTracks(searchTerm, { limit: parseInt(limit) });
         if (results.body?.tracks?.items) {
           tracks = results.body.tracks.items.map((t) => ({
             spotifyId: t.id,
@@ -74,50 +142,7 @@ const searchTracks = async (req, res, next) => {
           }));
         }
       } catch (spotifyErr) {
-        // Fall back to iTunes
-      }
-    }
-
-    // Attempt 2: Universal iTunes Search API (Guaranteed 30s audio previews & zero API key requirement)
-    if (tracks.length === 0 || tracks.every((t) => !t.previewUrl)) {
-      try {
-        const iTunesRes = await fetch(
-          `https://itunes.apple.com/search?term=${encodeURIComponent(q.trim())}&media=music&entity=song&limit=${limit}`,
-          {
-            headers: {
-              'User-Agent':
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              Accept: 'application/json',
-            },
-          }
-        );
-
-        if (iTunesRes.ok) {
-          const data = await iTunesRes.json();
-          if (data.results && data.results.length > 0) {
-            const iTunesTracks = data.results.map((t) => ({
-              spotifyId: String(t.trackId),
-              title: t.trackName,
-              artist: t.artistName,
-              albumArt: t.artworkUrl100 ? t.artworkUrl100.replace('100x100bb', '600x600bb') : '',
-              spotifyUri: t.trackViewUrl || '',
-              previewUrl: t.previewUrl || '',
-              duration: t.trackTimeMillis || 0,
-            }));
-
-            // If Spotify returned tracks without previews, merge iTunes preview URLs
-            if (tracks.length > 0) {
-              tracks = tracks.map((spTrack, i) => ({
-                ...spTrack,
-                previewUrl: spTrack.previewUrl || iTunesTracks[i]?.previewUrl || '',
-              }));
-            } else {
-              tracks = iTunesTracks;
-            }
-          }
-        }
-      } catch (iTunesErr) {
-        console.error('[Spotify] iTunes Search fetch error:', iTunesErr.message);
+        // Spotify API fallback failed
       }
     }
 
