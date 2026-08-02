@@ -14,8 +14,11 @@ import toast from 'react-hot-toast';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
   const fetchCouple = useCoupleStore((state) => state.fetchCouple);
+
+  const inviteCodeFromUrl = searchParams.get('code');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,10 +56,10 @@ const LoginPage = () => {
           toast.success('Welcome back to Pairly!');
         }
 
-        if (user.coupleId || user.partnerId) {
-          navigate('/');
+        if (inviteCodeFromUrl) {
+          navigate(`/pair?code=${inviteCodeFromUrl}`);
         } else {
-          navigate('/pair');
+          navigate('/');
         }
       } else {
         setError(res.message || 'Login failed.');

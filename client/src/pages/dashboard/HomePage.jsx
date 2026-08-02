@@ -111,6 +111,32 @@ const HomePage = () => {
         title={`Dashboard — ${user?.name || 'Couple'} & ${partner?.name || 'Partner'}'s Sanctuary | Pairly`}
         description="Overview of your private couples dashboard, days together counter, time-capsule letters, mood check-ins, and relationship memories."
       />
+      {/* Unpaired Partner Banner */}
+      {!partner && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-5 rounded-3xl glass-card border border-rose-500/40 bg-gradient-to-r from-rose-950/80 via-purple-950/80 to-slate-950/80 flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl"
+        >
+          <div className="flex items-center gap-4 text-center md:text-left">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
+              <Heart className="w-6 h-6 text-rose-300 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-base font-extrabold text-white">Link Your Sanctuary with Your Partner 💕</h4>
+              <p className="text-xs text-rose-200/80 mt-0.5">
+                You are currently in solo preview mode. Pair with your partner to seal capsule letters, share moods, and drop date pins!
+              </p>
+            </div>
+          </div>
+          <Link to="/pair" className="shrink-0 w-full md:w-auto">
+            <Button size="sm" className="w-full font-bold bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white px-6 py-2.5 rounded-xl shadow-lg">
+              Link Accounts / Enter Code →
+            </Button>
+          </Link>
+        </motion.div>
+      )}
+
       {/* Hero Days Together Banner */}
       <motion.div
         initial={{ opacity: 0, scale: 0.98 }}

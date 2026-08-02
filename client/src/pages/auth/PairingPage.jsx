@@ -24,10 +24,23 @@ const PairingPage = () => {
   const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    const hasToken = localStorage.getItem('pairly_token');
+
+    if (!user && !hasToken) {
+      if (codeFromUrl) {
+        toast('Please create an account or log in to accept your invitation!', { icon: '💕' });
+        navigate(`/register?code=${codeFromUrl}`);
+      } else {
+        navigate('/login');
+      }
+      return;
+    }
+
     if (isPaired) {
       navigate('/');
     }
-  }, [isPaired, navigate]);
+  }, [user, isPaired, searchParams, navigate]);
 
   useEffect(() => {
     const codeFromUrl = searchParams.get('code');

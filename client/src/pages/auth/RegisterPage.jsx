@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, Calendar, AlertCircle, Sparkles, Heart } from 'lucide-react';
 import Button from '../../components/ui/Button';
@@ -12,7 +12,10 @@ import useAuthStore from '../../stores/useAuthStore';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setAuth = useAuthStore((state) => state.setAuth);
+
+  const inviteCodeFromUrl = searchParams.get('code');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -55,8 +58,12 @@ const RegisterPage = () => {
     }
   };
 
-  const handleProceedToPairing = () => {
-    navigate('/pair');
+  const handleProceedAfterRegister = () => {
+    if (inviteCodeFromUrl) {
+      navigate(`/pair?code=${inviteCodeFromUrl}`);
+    } else {
+      navigate('/');
+    }
   };
 
   return (
@@ -79,6 +86,15 @@ const RegisterPage = () => {
           <h2 className="text-3xl font-extrabold text-white">Create Account</h2>
           <p className="text-sm text-rose-200/60 mt-1">Start your private relationship sanctuary today</p>
         </div>
+
+        {inviteCodeFromUrl && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-rose-500/20 to-purple-500/20 border border-rose-500/40 text-center text-xs text-rose-100 flex flex-col items-center gap-1 shadow-lg">
+            <span className="font-extrabold text-amber-300 flex items-center gap-1">
+              <Heart className="w-3.5 h-3.5 fill-amber-300 text-amber-300" /> Partner Invitation Received!
+            </span>
+            <span>You were invited with code <strong className="text-white font-mono bg-white/10 px-2 py-0.5 rounded">{inviteCodeFromUrl}</strong>. Register below to accept!</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">
@@ -172,8 +188,8 @@ const RegisterPage = () => {
                 </p>
               </div>
 
-              <Button onClick={handleProceedToPairing} size="lg" className="w-full font-bold py-3">
-                <Heart className="w-4 h-4 fill-white" /> Proceed to Partner Pairing
+              <Button onClick={handleProceedAfterRegister} size="lg" className="w-full font-bold py-3">
+                <Heart className="w-4 h-4 fill-white" /> {inviteCodeFromUrl ? 'Accept Invitation & Pair →' : 'Explore My Dashboard →'}
               </Button>
             </motion.div>
           </div>
