@@ -35,7 +35,7 @@ const AppLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 text-white flex flex-col w-full pb-16 lg:pb-0">
+    <div className="min-h-screen bg-gradient-to-b from-rose-950 via-purple-950 to-slate-950 text-white flex flex-col w-full pb-20 lg:pb-0">
       <Navbar />
       <div className="flex flex-1 w-full">
         <Sidebar />

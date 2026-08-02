@@ -30,10 +30,13 @@ const Navbar = () => {
 
         {/* Center: Days Together Counter */}
         {daysTogether > 0 && (
-          <div className="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-200 text-xs font-medium">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-200 text-xs font-medium">
             <Heart className="w-3.5 h-3.5 fill-rose-400 text-rose-400 animate-bounce" />
-            <span>
+            <span className="hidden sm:inline">
               <strong className="text-white text-sm font-bold">{daysTogether}</strong> Days Together
+            </span>
+            <span className="sm:hidden font-bold text-white text-xs">
+              {daysTogether}d
             </span>
           </div>
         )}

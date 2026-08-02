@@ -11,6 +11,10 @@ import {
   Trophy,
   MessageSquare,
   ArrowRight,
+  History,
+  Image,
+  Music,
+  Calendar,
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -64,6 +68,34 @@ const HomePage = () => {
       color: 'from-emerald-500 to-teal-600',
     },
 
+    {
+      title: 'Our Story',
+      desc: 'Milestones & timeline memories',
+      icon: History,
+      link: '/our-story',
+      color: 'from-blue-500 to-purple-600',
+    },
+    {
+      title: 'Memories Gallery',
+      desc: 'Shared photos & moments',
+      icon: Image,
+      link: '/memories',
+      color: 'from-pink-600 to-rose-600',
+    },
+    {
+      title: 'Shared Songs',
+      desc: 'Playlist with 30s previews',
+      icon: Music,
+      link: '/songs',
+      color: 'from-emerald-600 to-teal-500',
+    },
+    {
+      title: 'Calendar',
+      desc: 'Shared relationship calendar',
+      icon: Calendar,
+      link: '/calendar',
+      color: 'from-indigo-500 to-rose-500',
+    },
     {
       title: 'Private Chat',
       desc: 'Real-time love notes & chat',
