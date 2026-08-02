@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Music, Plus, Play, Pause, Heart, Disc, Trash2, Search, Volume2, Check, Sparkles } from 'lucide-react';
+import { Music, Plus, Play, Pause, Heart, Disc, Trash2, Search, Volume2, Check, Sparkles, X } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -51,30 +51,48 @@ const PlaylistPage = () => {
     }
   };
 
-  // Live Track Search (Automatically fetches song photo cover, title, artist, & audio preview)
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
-    if (!query.trim()) {
+  // Debounced Search Engine Effect (Fetches data 600ms AFTER user finishes typing)
+  useEffect(() => {
+    if (!searchQuery.trim() || selectedTrack) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      executeSearch(searchQuery);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedTrack]);
+
+  // Execute Track Search
+  const executeSearch = async (query) => {
+    if (!query || !query.trim()) {
       setSearchResults([]);
       return;
     }
 
     setIsSearching(true);
     try {
-      const res = await api.get(`/spotify/search?q=${encodeURIComponent(query)}`);
+      const res = await api.get(`/spotify/search?q=${encodeURIComponent(query.trim())}`);
       if (res.success && res.data?.tracks) {
         setSearchResults(res.data.tracks);
+        if (res.data.tracks.length === 0) {
+          toast.error('No songs found. Try another title or artist.');
+        }
       }
     } catch (err) {
-      console.error('Search error:', err);
+      toast.error('Could not search songs.');
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Select a track from Spotify search
+  // Select a track from Spotify/iTunes search
   const handleSelectTrack = (track) => {
     setSelectedTrack(track);
+    setSearchResults([]);
     toast.success(`Selected "${track.title}"! Now enter why this song is special.`);
   };
 
@@ -149,7 +167,7 @@ const PlaylistPage = () => {
     }
   };
 
-  // Toggle Audio Playback (Plays Spotify audio preview)
+  // Toggle Audio Playback (Plays Spotify/iTunes audio preview)
   const togglePlay = (song) => {
     if (!song.previewUrl) {
       toast.error('No audio preview available for this track.');
@@ -316,22 +334,61 @@ const PlaylistPage = () => {
       {/* Unified Add Song Popup Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Add Special Song to Playlist">
         <form onSubmit={handleAddSong} className="flex flex-col gap-4">
-          {/* Step 1: Song Search Input */}
+          {/* Step 1: Song Search Input with Debounced Search Engine */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-rose-200/80 uppercase">
               1. Search & Select Song
             </label>
-            <Input
-              placeholder="Type song title or artist (e.g. Perfect, Ed Sheeran)..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-              icon={Search}
-            />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  placeholder="Type song title or artist (e.g. Perfect, Ed Sheeran)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      executeSearch(searchQuery);
+                    }
+                  }}
+                  icon={Search}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSearchResults([]);
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rose-300/60 hover:text-white p-1"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              <Button
+                type="button"
+                onClick={() => executeSearch(searchQuery)}
+                isLoading={isSearching}
+                disabled={!searchQuery.trim()}
+                size="md"
+                className="shrink-0 px-4 font-bold"
+              >
+                Search
+              </Button>
+            </div>
           </div>
 
+          {/* Loading State */}
+          {isSearching && (
+            <div className="text-center py-4 text-xs font-semibold text-rose-300/70 animate-pulse">
+              Searching music catalog...
+            </div>
+          )}
+
           {/* Search Results List with Album Cover Artwork */}
-          {searchResults.length > 0 && !selectedTrack && (
-            <div className="max-h-52 overflow-y-auto glass-card rounded-xl p-2 border border-rose-500/40 flex flex-col gap-1">
+          {searchResults.length > 0 && !selectedTrack && !isSearching && (
+            <div className="max-h-56 overflow-y-auto glass-card rounded-xl p-2 border border-rose-500/40 flex flex-col gap-1">
               {searchResults.map((track) => (
                 <button
                   key={track.spotifyId || track.title}

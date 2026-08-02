@@ -70,7 +70,7 @@ const searchTracks = async (req, res, next) => {
           }));
         }
       } catch (spotifyErr) {
-        console.warn(`Spotify API search failed (${spotifyErr.message || '403 Forbidden'}). Falling back to iTunes Music API for 30s previews...`);
+        // Spotify API fallback to iTunes
       }
     }
 
@@ -95,7 +95,7 @@ const searchTracks = async (req, res, next) => {
           }
         }
       } catch (iTunesErr) {
-        console.error('iTunes Search API fetch error:', iTunesErr.message);
+        console.error('[Spotify] iTunes Search fetch error:', iTunesErr.message);
       }
     }
 
