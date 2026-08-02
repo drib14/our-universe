@@ -221,8 +221,11 @@ const PlacesPage = () => {
           <MapContainer center={mapCenter} zoom={11} className="w-full h-full">
             <MapController center={mapCenter} />
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution='&copy; <a href="https://locationiq.com">LocationIQ</a>'
+              url={
+                import.meta.env.VITE_MAP_TILE_URL ||
+                `https://{s}-tiles.locationiq.com/v3/streets/r/{z}/{x}/{y}.png?key=${import.meta.env.VITE_LOCATIONIQ_TOKEN}`
+              }
             />
             {places.map((place) => {
               const coords = place.location?.coordinates;

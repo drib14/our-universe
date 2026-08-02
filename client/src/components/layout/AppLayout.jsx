@@ -27,11 +27,7 @@ const AppLayout = () => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/welcome" replace />;
-  }
-
-  if (!isPaired) {
-    return <Navigate to="/pair" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (

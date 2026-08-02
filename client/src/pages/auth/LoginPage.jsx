@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, AlertCircle, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, AlertCircle, KeyRound, CheckCircle2, Heart } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
@@ -143,6 +143,15 @@ const LoginPage = () => {
           <h2 className="text-3xl font-extrabold text-white">Welcome Back</h2>
           <p className="text-sm text-rose-200/60 mt-1">Enter your details to access your shared universe</p>
         </div>
+
+        {inviteCodeFromUrl && (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-rose-500/20 to-purple-500/20 border border-rose-500/40 text-center text-xs text-rose-100 flex flex-col items-center gap-1 shadow-lg">
+            <span className="font-extrabold text-amber-300 flex items-center gap-1">
+              <Heart className="w-3.5 h-3.5 fill-amber-300 text-amber-300 text-rose-300" /> Partner Invitation Received!
+            </span>
+            <span>You were invited with code <strong className="text-white font-mono bg-white/10 px-2 py-0.5 rounded">{inviteCodeFromUrl}</strong>. Log in below to accept!</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 text-xs flex items-center gap-2">

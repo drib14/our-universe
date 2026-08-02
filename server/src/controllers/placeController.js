@@ -51,49 +51,38 @@ const searchLocation = async (req, res, next) => {
     }
 
     const token = process.env.LOCATIONIQ_ACCESS_TOKEN;
-    let results = [];
-
-    if (token && token !== 'your_locationiq_access_token') {
-      try {
-        const response = await fetch(
-          `https://us1.locationiq.com/v1/search.php?key=${token}&q=${encodeURIComponent(q)}&format=json&limit=5`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          results = data.map((item) => ({
-            name: item.display_name.split(',')[0],
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon),
-            address: item.display_name,
-          }));
-        }
-      } catch (err) {
-        console.error('LocationIQ fetch error:', err.message);
-      }
+    if (!token) {
+      console.error('[LocationIQ Error] LOCATIONIQ_ACCESS_TOKEN is missing in environment variables.');
+      return res.status(400).json({
+        success: false,
+        message: 'LOCATIONIQ_ACCESS_TOKEN environment variable is not configured.',
+      });
     }
 
-    if (results.length === 0) {
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5`,
-          { headers: { 'User-Agent': 'PairlyApp/1.0' } }
-        );
-        if (response.ok) {
-          const data = await response.json();
-          results = data.map((item) => ({
-            name: item.display_name.split(',')[0],
-            lat: parseFloat(item.lat),
-            lng: parseFloat(item.lon),
-            address: item.display_name,
-          }));
-        }
-      } catch (err) {
-        console.error('Nominatim fetch error:', err.message);
-      }
+    const response = await fetch(
+      `https://us1.locationiq.com/v1/search.php?key=${token}&q=${encodeURIComponent(q)}&format=json&limit=5`
+    );
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error(`[LocationIQ Search Error] HTTP ${response.status}: ${errText}`);
+      return res.status(response.status).json({
+        success: false,
+        message: `LocationIQ search failed with status ${response.status}.`,
+      });
     }
+
+    const data = await response.json();
+    const results = (Array.isArray(data) ? data : []).map((item) => ({
+      name: item.display_name ? item.display_name.split(',')[0] : 'Unknown Location',
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      address: item.display_name || '',
+    }));
 
     res.json({ success: true, data: { results } });
   } catch (error) {
+    console.error('[LocationIQ Exception]', error.message);
     next(error);
   }
 };
