@@ -34,7 +34,12 @@ const isOriginAllowed = (origin) => {
   if (allowedOrigins.some((o) => o && o.replace(/\/$/, '') === cleanOrigin)) return true;
   try {
     const hostname = new URL(origin).hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.onrender.com')) {
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.endsWith('.onrender.com') ||
+      hostname.endsWith('.vercel.app')
+    ) {
       return true;
     }
   } catch (e) {}
@@ -68,7 +73,27 @@ const io = new Server(server, {
 // Initialize socket handlers
 initializeSocket(io);
 
+// Connect DB helper for serverless Vercel & traditional server environments
+let dbPromise = null;
+const ensureDB = async () => {
+  if (!dbPromise) {
+    dbPromise = connectDB().catch((err) => {
+      dbPromise = null;
+      throw err;
+    });
+  }
+  await dbPromise;
+};
+
 // ── MIDDLEWARE ──
+app.use(async (req, res, next) => {
+  try {
+    await ensureDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(
@@ -125,7 +150,7 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
-  await connectDB();
+  await ensureDB();
 
   server.listen(PORT, () => {
     console.log(`
@@ -138,6 +163,8 @@ const startServer = async () => {
   });
 };
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
 
-module.exports = { app, server, io };
+module.exports = app;

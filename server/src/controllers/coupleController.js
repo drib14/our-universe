@@ -170,26 +170,18 @@ const sendInvite = async (req, res, next) => {
     }
 
     const template = emailTemplates.partnerInvite(user.name, user.pairCode);
-    const emailResult = await sendEmail(cleanEmail, template.subject, template.html);
-
-    if (emailResult && !emailResult.success) {
-      console.error(`[Invite Email Log] Delivery warning for ${cleanEmail}:`, emailResult.error);
-    } else if (emailResult && emailResult.simulated) {
-      console.log(`[Invite Email Log] Email simulated for ${cleanEmail} (Host credentials missing).`);
-    } else {
-      console.log(`[Invite Email Log] Email delivered successfully to ${cleanEmail}.`);
-    }
+    await sendEmail(cleanEmail, template.subject, template.html);
 
     res.json({
       success: true,
       message: 'Invitation email sent successfully!',
-      data: { pairCode: user.pairCode, emailSent: !!emailResult?.success },
+      data: { pairCode: user.pairCode },
     });
   } catch (error) {
-    console.error('Send invite error:', error);
+    console.error('Send invite error:', error.message);
     res.status(400).json({
       success: false,
-      message: 'Failed to send invitation.',
+      message: error.message || 'Failed to send invitation.',
     });
   }
 };

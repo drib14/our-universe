@@ -30,15 +30,14 @@ const createTransporter = () => {
 };
 
 /**
- * Send an email via Gmail SMTP
+ * Send an email via Gmail SMTP (throws error on delivery failure)
  */
 const sendEmail = async (to, subject, html, text = '') => {
   const user = getEmailUser();
   const pass = getEmailPassword();
 
   if (!user || !pass) {
-    console.warn(`[Email Config Warning] EMAIL_USER (${user ? 'OK' : 'MISSING'}) or EMAIL_PASSWORD (${pass ? 'OK' : 'MISSING'}).`);
-    return { simulated: true, to, subject };
+    throw new Error('EMAIL_USER or EMAIL_PASSWORD environment variables are not set on server.');
   }
 
   const textContent = text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -55,10 +54,10 @@ const sendEmail = async (to, subject, html, text = '') => {
     });
 
     console.log(`[Email Success] Delivered to ${to} | Message ID: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    return info;
   } catch (err) {
-    console.error(`[Email Failure] Could not send email to ${to}:`, err.message);
-    return { success: false, error: err.message };
+    console.error(`[Email Failure] Could not send email to ${to}: ${err.message}`);
+    throw new Error(`Gmail SMTP delivery failed: ${err.message}`);
   }
 };
 
