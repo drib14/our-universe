@@ -39,9 +39,9 @@ services:
       - key: MONGO_URI
         sync: false
       - key: ACCESS_TOKEN_SECRET
-        generateValue: true
+        sync: false
       - key: REFRESH_TOKEN_SECRET
-        generateValue: true
+        sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY
