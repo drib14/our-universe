@@ -149,7 +149,7 @@ const renderEmailWrapper = (title, contentHtml) => `
  */
 const emailTemplates = {
   partnerInvite: (senderName, inviteCode) => {
-    const baseUrl = process.env.CLIENT_URL || 'http://localhost:8081';
+    const baseUrl = process.env.CLIENT_URL || 'https://pairly-web.onrender.com';
     const pairUrl = `${baseUrl.replace(/\/$/, '')}/pair?code=${inviteCode}`;
 
     return {
@@ -220,7 +220,7 @@ const emailTemplates = {
       </p>
 
       <div style="text-align: center; margin-top: 28px; margin-bottom: 16px;">
-        <a href="${(process.env.CLIENT_URL || 'http://localhost:8081').replace(/\/$/, '')}/capsule-mail" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
+        <a href="${(process.env.CLIENT_URL || 'https://pairly-web.onrender.com').replace(/\/$/, '')}/capsule-mail" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
           Break Seal & Read Letter →
         </a>
       </div>
@@ -242,7 +242,7 @@ const emailTemplates = {
       </p>
       
       <div style="text-align: center; margin-top: 28px; margin-bottom: 16px;">
-        <a href="${(process.env.CLIENT_URL || 'http://localhost:8081').replace(/\/$/, '')}/pair" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
+        <a href="${(process.env.CLIENT_URL || 'https://pairly-web.onrender.com').replace(/\/$/, '')}/pair" class="cta-btn" style="display: inline-block; background: linear-gradient(90deg, #f43f5e 0%, #ec4899 50%, #9333ea 100%); color: #ffffff; font-size: 15px; font-weight: 700; text-decoration: none; padding: 14px 36px; border-radius: 16px; box-shadow: 0 8px 24px rgba(244, 63, 94, 0.4);">
           Start Pairing Now →
         </a>
       </div>
