@@ -36,11 +36,21 @@ const initializeSocket = (io) => {
       const coupleRoom = `couple:${socket.user.coupleId}`;
       socket.join(coupleRoom);
 
-      // Notify partner
+      // Notify room partner that user is online
       socket.to(coupleRoom).emit('partner_online', {
         userId,
         name: socket.user.name,
       });
+
+      // Check if partner is already online and notify connecting user
+      if (socket.user.partnerId) {
+        const partnerIdStr = socket.user.partnerId._id
+          ? socket.user.partnerId._id.toString()
+          : socket.user.partnerId.toString();
+        if (onlineUsers.has(partnerIdStr)) {
+          socket.emit('partner_online', { userId: partnerIdStr });
+        }
+      }
     }
 
     // ── CHAT EVENTS ──
@@ -48,6 +58,13 @@ const initializeSocket = (io) => {
     socket.on('send_message', async (data) => {
       try {
         if (!socket.user.coupleId) return;
+
+        // If data is already a populated message object from API upload
+        if (data._id && data.content) {
+          const coupleRoom = `couple:${socket.user.coupleId}`;
+          socket.to(coupleRoom).emit('new_message', data);
+          return;
+        }
 
         const message = await Message.create({
           coupleId: socket.user.coupleId,

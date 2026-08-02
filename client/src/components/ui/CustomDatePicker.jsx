@@ -9,6 +9,9 @@ const MONTH_NAMES = [
 
 const DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 120 }, (_, i) => CURRENT_YEAR - 70 + i);
+
 const CustomDatePicker = ({ label, value, onChange, placeholder = 'Select Date', required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -112,21 +115,49 @@ const CustomDatePicker = ({ label, value, onChange, placeholder = 'Select Date',
             className="absolute top-full left-0 mt-1.5 w-72 glass-card bg-slate-950 border border-rose-500/40 rounded-2xl p-4 shadow-2xl z-[9999] backdrop-blur-2xl select-none"
           >
             {/* Header: Month & Year Navigator */}
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10 gap-1">
               <button
                 type="button"
                 onClick={handlePrevMonth}
-                className="p-1 text-rose-300 hover:text-white hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+                className="p-1 text-rose-300 hover:text-white hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Previous Month"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-xs font-bold text-white tracking-wide">
-                {MONTH_NAMES[currentMonth]} {currentYear}
-              </span>
+
+              <div className="flex items-center gap-1.5">
+                {/* Direct Month Select */}
+                <select
+                  value={currentMonth}
+                  onChange={(e) => setCurrentMonth(Number(e.target.value))}
+                  className="bg-slate-900/90 text-rose-100 text-xs font-bold px-2 py-1 rounded-lg border border-white/20 focus:border-rose-400 focus:outline-none cursor-pointer"
+                >
+                  {MONTH_NAMES.map((monthName, idx) => (
+                    <option key={monthName} value={idx} className="bg-slate-950 text-white">
+                      {monthName}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Direct Year Select */}
+                <select
+                  value={currentYear}
+                  onChange={(e) => setCurrentYear(Number(e.target.value))}
+                  className="bg-slate-900/90 text-rose-100 text-xs font-bold px-2 py-1 rounded-lg border border-white/20 focus:border-rose-400 focus:outline-none cursor-pointer"
+                >
+                  {YEARS.map((yr) => (
+                    <option key={yr} value={yr} className="bg-slate-950 text-white">
+                      {yr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <button
                 type="button"
                 onClick={handleNextMonth}
-                className="p-1 text-rose-300 hover:text-white hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer"
+                className="p-1 text-rose-300 hover:text-white hover:bg-rose-500/20 rounded-lg transition-colors cursor-pointer shrink-0"
+                title="Next Month"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
