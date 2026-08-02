@@ -75,7 +75,7 @@ app.use('/api', apiLimiter);
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: '💕 Pairly API is running!',
+    message: 'Pairly API is running!',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
   });
@@ -114,7 +114,7 @@ const startServer = async () => {
   server.listen(PORT, () => {
     console.log(`
 ╔══════════════════════════════════════╗
-║     💕 Pairly API Server             ║
+║     Pairly API Server                ║
 ║     Running on port ${PORT}              ║
 ║     Environment: ${process.env.NODE_ENV || 'development'}     ║
 ╚══════════════════════════════════════╝

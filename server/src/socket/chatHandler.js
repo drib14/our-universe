@@ -26,7 +26,7 @@ const initializeSocket = (io) => {
 
   io.on('connection', async (socket) => {
     const userId = socket.user._id.toString();
-    console.log(`🟢 ${socket.user.name} connected (${socket.id})`);
+    console.log(`[Socket] Connected: ${socket.user.name} (${socket.id})`);
 
     // Track online status
     onlineUsers.set(userId, socket.id);
@@ -146,7 +146,7 @@ const initializeSocket = (io) => {
     // ── DISCONNECT ──
 
     socket.on('disconnect', () => {
-      console.log(`🔴 ${socket.user.name} disconnected`);
+      console.log(`[Socket] Disconnected: ${socket.user.name}`);
       onlineUsers.delete(userId);
 
       if (socket.user.coupleId) {
