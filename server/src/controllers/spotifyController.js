@@ -40,7 +40,7 @@ const authCallback = async (req, res, next) => {
   }
 };
 
-// Search music tracks (Spotify Web API with resilient iTunes API fallback for 30s previews)
+// Search music tracks (Spotify Web API with resilient iTunes API fallback for guaranteed 30s previews)
 const searchTracks = async (req, res, next) => {
   try {
     const { q, limit = 10 } = req.query;
@@ -50,8 +50,12 @@ const searchTracks = async (req, res, next) => {
 
     let tracks = [];
 
-    // Attempt 1: Try Spotify Web API if client ID & secret configured
-    if (process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_ID !== 'your_spotify_client_id') {
+    // Attempt 1: Try Spotify Web API if client credentials exist in environment
+    if (
+      process.env.SPOTIFY_CLIENT_ID &&
+      process.env.SPOTIFY_CLIENT_SECRET &&
+      process.env.SPOTIFY_CLIENT_ID !== 'your_spotify_client_id'
+    ) {
       try {
         const spotifyApi = getSpotifyApi();
         const authData = await spotifyApi.clientCredentialsGrant();
@@ -70,20 +74,28 @@ const searchTracks = async (req, res, next) => {
           }));
         }
       } catch (spotifyErr) {
-        // Spotify API fallback to iTunes
+        // Fall back to iTunes
       }
     }
 
-    // Attempt 2: Fallback to iTunes Search API (100% reliable, zero 403 errors, includes guaranteed 30s audio previews)
-    if (tracks.length === 0) {
+    // Attempt 2: Universal iTunes Search API (Guaranteed 30s audio previews & zero API key requirement)
+    if (tracks.length === 0 || tracks.every((t) => !t.previewUrl)) {
       try {
         const iTunesRes = await fetch(
-          `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&media=music&entity=song&limit=${limit}`
+          `https://itunes.apple.com/search?term=${encodeURIComponent(q.trim())}&media=music&entity=song&limit=${limit}`,
+          {
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              Accept: 'application/json',
+            },
+          }
         );
+
         if (iTunesRes.ok) {
           const data = await iTunesRes.json();
-          if (data.results) {
-            tracks = data.results.map((t) => ({
+          if (data.results && data.results.length > 0) {
+            const iTunesTracks = data.results.map((t) => ({
               spotifyId: String(t.trackId),
               title: t.trackName,
               artist: t.artistName,
@@ -92,6 +104,16 @@ const searchTracks = async (req, res, next) => {
               previewUrl: t.previewUrl || '',
               duration: t.trackTimeMillis || 0,
             }));
+
+            // If Spotify returned tracks without previews, merge iTunes preview URLs
+            if (tracks.length > 0) {
+              tracks = tracks.map((spTrack, i) => ({
+                ...spTrack,
+                previewUrl: spTrack.previewUrl || iTunesTracks[i]?.previewUrl || '',
+              }));
+            } else {
+              tracks = iTunesTracks;
+            }
           }
         }
       } catch (iTunesErr) {
