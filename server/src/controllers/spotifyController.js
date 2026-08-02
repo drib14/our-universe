@@ -40,7 +40,7 @@ const authCallback = async (req, res, next) => {
   }
 };
 
-// Search music tracks (Universal multi-stage search with iTunes & Spotify API fallbacks)
+// Search music tracks (Spotify Web API primary with resilient Deezer & iTunes fallbacks)
 const searchTracks = async (req, res, next) => {
   try {
     const { q, limit = 10 } = req.query;
@@ -51,41 +51,81 @@ const searchTracks = async (req, res, next) => {
     const searchTerm = q.trim();
     let tracks = [];
 
-    // Stage 1: Primary Universal iTunes API Search (Guaranteed 30s audio previews & zero API key requirement)
-    try {
-      const iTunesRes = await fetch(
-        `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&media=music&entity=song&limit=${limit}`,
-        {
-          headers: {
-            'User-Agent':
-              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            Accept: 'application/json',
-          },
-        }
-      );
+    // Stage 1: Try Spotify Web API if client credentials exist in environment
+    if (
+      process.env.SPOTIFY_CLIENT_ID &&
+      process.env.SPOTIFY_CLIENT_SECRET &&
+      process.env.SPOTIFY_CLIENT_ID !== 'your_spotify_client_id'
+    ) {
+      try {
+        const spotifyApi = getSpotifyApi();
+        const authData = await spotifyApi.clientCredentialsGrant();
+        spotifyApi.setAccessToken(authData.body['access_token']);
 
-      if (iTunesRes.ok) {
-        const data = await iTunesRes.json();
-        if (data.results && data.results.length > 0) {
-          tracks = data.results.map((t) => ({
-            spotifyId: String(t.trackId),
-            title: t.trackName,
-            artist: t.artistName,
-            albumArt: t.artworkUrl100 ? t.artworkUrl100.replace('100x100bb', '600x600bb') : '',
-            spotifyUri: t.trackViewUrl || '',
-            previewUrl: t.previewUrl || '',
-            duration: t.trackTimeMillis || 0,
+        const results = await spotifyApi.searchTracks(searchTerm, { limit: parseInt(limit) });
+        if (results.body?.tracks?.items?.length > 0) {
+          tracks = results.body.tracks.items.map((t) => ({
+            spotifyId: t.id,
+            title: t.name,
+            artist: t.artists.map((a) => a.name).join(', '),
+            albumArt: t.album.images[0]?.url || '',
+            spotifyUri: t.uri,
+            previewUrl: t.preview_url || '',
+            duration: t.duration_ms,
           }));
         }
+      } catch (spotifyErr) {
+        console.error('[Spotify API Error]:', spotifyErr.message || spotifyErr);
       }
-    } catch (iTunesErr) {
-      // Continue to stage 2
     }
 
-    // Stage 2: Broad iTunes API Search if Stage 1 yielded 0 results
+    // Stage 2: Universal Deezer Music API Fallback (Guaranteed 30s audio previews & zero API key requirement)
+    if (tracks.length === 0 || tracks.every((t) => !t.previewUrl)) {
+      try {
+        const deezerRes = await fetch(
+          `https://api.deezer.com/search?q=${encodeURIComponent(searchTerm)}&limit=${limit}`,
+          {
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              Accept: 'application/json',
+            },
+          }
+        );
+
+        if (deezerRes.ok) {
+          const deezerData = await deezerRes.json();
+          if (deezerData.data && deezerData.data.length > 0) {
+            const deezerTracks = deezerData.data.map((t) => ({
+              spotifyId: String(t.id),
+              title: t.title,
+              artist: t.artist?.name || 'Unknown Artist',
+              albumArt: t.album?.cover_xl || t.album?.cover_big || t.album?.cover_medium || '',
+              spotifyUri: t.link || '',
+              previewUrl: t.preview || '',
+              duration: (t.duration || 0) * 1000,
+            }));
+
+            if (tracks.length > 0) {
+              // Merge previews into Spotify tracks if Spotify returned previewUrl: null
+              tracks = tracks.map((spTrack, i) => ({
+                ...spTrack,
+                previewUrl: spTrack.previewUrl || deezerTracks[i]?.previewUrl || '',
+              }));
+            } else {
+              tracks = deezerTracks;
+            }
+          }
+        }
+      } catch (deezerErr) {
+        console.error('[Deezer API Error]:', deezerErr.message || deezerErr);
+      }
+    }
+
+    // Stage 3: iTunes Search API Fallback if still empty
     if (tracks.length === 0) {
       try {
-        const broadRes = await fetch(
+        const iTunesRes = await fetch(
           `https://itunes.apple.com/search?term=${encodeURIComponent(searchTerm)}&limit=${limit}`,
           {
             headers: {
@@ -96,10 +136,10 @@ const searchTracks = async (req, res, next) => {
           }
         );
 
-        if (broadRes.ok) {
-          const data = await broadRes.json();
-          if (data.results && data.results.length > 0) {
-            tracks = data.results
+        if (iTunesRes.ok) {
+          const iTunesData = await iTunesRes.json();
+          if (iTunesData.results && iTunesData.results.length > 0) {
+            tracks = iTunesData.results
               .filter((t) => t.trackName || t.collectionName)
               .map((t) => ({
                 spotifyId: String(t.trackId || t.collectionId || Date.now()),
@@ -112,37 +152,8 @@ const searchTracks = async (req, res, next) => {
               }));
           }
         }
-      } catch (err) {
-        // Continue to stage 3
-      }
-    }
-
-    // Stage 3: Spotify Web API if configured & needed
-    if (
-      tracks.length === 0 &&
-      process.env.SPOTIFY_CLIENT_ID &&
-      process.env.SPOTIFY_CLIENT_SECRET &&
-      process.env.SPOTIFY_CLIENT_ID !== 'your_spotify_client_id'
-    ) {
-      try {
-        const spotifyApi = getSpotifyApi();
-        const authData = await spotifyApi.clientCredentialsGrant();
-        spotifyApi.setAccessToken(authData.body['access_token']);
-
-        const results = await spotifyApi.searchTracks(searchTerm, { limit: parseInt(limit) });
-        if (results.body?.tracks?.items) {
-          tracks = results.body.tracks.items.map((t) => ({
-            spotifyId: t.id,
-            title: t.name,
-            artist: t.artists.map((a) => a.name).join(', '),
-            albumArt: t.album.images[0]?.url || '',
-            spotifyUri: t.uri,
-            previewUrl: t.preview_url || '',
-            duration: t.duration_ms,
-          }));
-        }
-      } catch (spotifyErr) {
-        // Spotify API fallback failed
+      } catch (iTunesErr) {
+        console.error('[iTunes API Error]:', iTunesErr.message || iTunesErr);
       }
     }
 
