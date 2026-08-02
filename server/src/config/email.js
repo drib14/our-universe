@@ -33,9 +33,9 @@ const createTransporter = () => {
 };
 
 /**
- * Send an email safely — returns a result object rather than throwing HTTP crash errors
+ * Send an email safely — includes plain text fallback for spam filter compliance
  */
-const sendEmail = async (to, subject, html) => {
+const sendEmail = async (to, subject, html, text = '') => {
   const user = getEmailUser();
   const pass = getEmailPassword();
 
@@ -49,11 +49,16 @@ const sendEmail = async (to, subject, html) => {
     return { simulated: true, to, subject };
   }
 
+  // Generate plain text fallback for spam filter compliance
+  const textContent = text || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
   try {
     const info = await transporter.sendMail({
-      from: `"Pairly — Private Sanctuary" <${user}>`,
+      from: `"Pairly Private Sanctuary" <${user}>`,
+      replyTo: user,
       to: to.trim(),
       subject,
+      text: textContent,
       html,
     });
 

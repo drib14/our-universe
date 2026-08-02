@@ -84,7 +84,10 @@ const PairingPage = () => {
     try {
       const res = await api.post('/couple/invite', { email: partnerEmail });
       if (res.success) {
-        toast.success(res.message || 'Invite email sent to your partner!');
+        toast.success(
+          res.message ? `${res.message} (Check inbox & spam folder)` : 'Invite email sent! (Check inbox & spam folder)',
+          { duration: 6000 }
+        );
         setPartnerEmail('');
       } else {
         toast.error(res.message || 'Could not send email invite.');
