@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Plus, Star, List, Map as MapIcon, Trash2, Search } from 'lucide-react';
 import Card from '../../components/ui/Card';
@@ -29,6 +29,16 @@ const MapController = ({ center }) => {
       map.setView(center, 12);
     }
   }, [center, map]);
+  return null;
+};
+
+// Component to capture direct clicks on map
+const MapClickEvents = ({ onMapClick }) => {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
   return null;
 };
 
@@ -114,6 +124,18 @@ const PlacesPage = () => {
     setSearchResults([]);
     setLocationQuery('');
     toast.success(`Location selected: ${loc.name}`);
+  };
+
+  const handleMapClick = (lat, lng) => {
+    const formattedLat = Number(lat.toFixed(6));
+    const formattedLng = Number(lng.toFixed(6));
+    setFormData((prev) => ({
+      ...prev,
+      lat: formattedLat,
+      lng: formattedLng,
+    }));
+    setIsModalOpen(true);
+    toast.success('Map location selected! Enter place details below.', { icon: '📍' });
   };
 
   const handleCreate = async (e) => {
@@ -220,6 +242,7 @@ const PlacesPage = () => {
         <div className="w-full h-[550px] rounded-3xl overflow-hidden glass-card border border-rose-500/30 shadow-2xl relative z-10">
           <MapContainer center={mapCenter} zoom={11} className="w-full h-full">
             <MapController center={mapCenter} />
+            <MapClickEvents onMapClick={handleMapClick} />
             <TileLayer
               attribution='&copy; <a href="https://locationiq.com">LocationIQ</a>'
               url={

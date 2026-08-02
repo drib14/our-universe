@@ -46,7 +46,7 @@ const createPlace = async (req, res, next) => {
 const searchLocation = async (req, res, next) => {
   try {
     const { q } = req.query;
-    if (!q) {
+    if (!q || !q.trim()) {
       return res.json({ success: true, data: { results: [] } });
     }
 
@@ -59,25 +59,36 @@ const searchLocation = async (req, res, next) => {
       });
     }
 
-    const response = await fetch(
-      `https://us1.locationiq.com/v1/search.php?key=${token}&q=${encodeURIComponent(q)}&format=json&limit=5`
-    );
+    const cleanQuery = q.trim();
+    let items = [];
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error(`[LocationIQ Search Error] HTTP ${response.status}: ${errText}`);
-      return res.status(response.status).json({
-        success: false,
-        message: `LocationIQ search failed with status ${response.status}.`,
-      });
+    // 1. Try LocationIQ Autocomplete API with POI & landmark tags
+    try {
+      const autoRes = await fetch(
+        `https://us1.locationiq.com/v1/autocomplete.php?key=${token}&q=${encodeURIComponent(cleanQuery)}&limit=10&normalizecity=1&tag=tourism:*,amenity:*,historic:*,leisure:*`
+      );
+      if (autoRes.ok) {
+        items = await autoRes.json();
+      }
+    } catch (e) {}
+
+    // 2. LocationIQ Search API with extratags and landmark address details
+    if (!Array.isArray(items) || items.length === 0) {
+      try {
+        const searchRes = await fetch(
+          `https://us1.locationiq.com/v1/search.php?key=${token}&q=${encodeURIComponent(cleanQuery)}&format=json&limit=10&addressdetails=1&extratags=1&namedetails=1&dedupe=1`
+        );
+        if (searchRes.ok) {
+          items = await searchRes.json();
+        }
+      } catch (e) {}
     }
 
-    const data = await response.json();
-    const results = (Array.isArray(data) ? data : []).map((item) => ({
-      name: item.display_name ? item.display_name.split(',')[0] : 'Unknown Location',
+    const results = (Array.isArray(items) ? items : []).map((item) => ({
+      name: item.display_name ? item.display_name.split(',')[0].trim() : (item.name || cleanQuery),
       lat: parseFloat(item.lat),
       lng: parseFloat(item.lon),
-      address: item.display_name || '',
+      address: item.display_name || cleanQuery,
     }));
 
     res.json({ success: true, data: { results } });
