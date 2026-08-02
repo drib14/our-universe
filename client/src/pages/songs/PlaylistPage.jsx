@@ -119,15 +119,13 @@ const PlaylistPage = () => {
       const res = await api.post('/spotify/playlist/song', payload);
       if (res.success && res.data?.playlist) {
         setSongs(res.data.playlist.songs);
+        toast.success('Song added to playlist!');
+        closeModal();
       } else {
-        setSongs([{ _id: Date.now().toString(), ...payload }, ...songs]);
+        toast.error(res.message || 'Could not add song.');
       }
-      toast.success('Song added to playlist!');
-      closeModal();
     } catch (err) {
-      setSongs([{ _id: Date.now().toString(), ...payload }, ...songs]);
-      toast.success('Song added to playlist!');
-      closeModal();
+      toast.error('Could not add song. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -154,12 +152,15 @@ const PlaylistPage = () => {
     const targetId = songToDelete._id || songToDelete.id;
 
     try {
-      await api.delete(`/spotify/playlist/song/${targetId}`);
-      setSongs(songs.filter((s) => (s._id || s.id) !== targetId));
+      const res = await api.delete(`/spotify/playlist/song/${targetId}`);
+      if (res.success && res.data?.playlist) {
+        setSongs(res.data.playlist.songs);
+      } else {
+        setSongs(songs.filter((s) => (s._id || s.id) !== targetId));
+      }
       toast.success('Song removed from playlist.');
     } catch (err) {
-      setSongs(songs.filter((s) => (s._id || s.id) !== targetId));
-      toast.success('Song removed from playlist.');
+      toast.error('Could not delete song.');
     } finally {
       setIsDeleting(false);
       setDeleteModalOpen(false);

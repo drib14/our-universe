@@ -75,7 +75,7 @@ const searchTracks = async (req, res, next) => {
           }));
         }
       } catch (spotifyErr) {
-        console.error('[Spotify API Error]:', spotifyErr.message || spotifyErr);
+        console.error('[Spotify API Error]:', spotifyErr?.message || spotifyErr?.body?.message || spotifyErr);
       }
     }
 

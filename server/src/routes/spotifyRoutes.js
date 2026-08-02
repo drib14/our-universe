@@ -15,7 +15,9 @@ router.get('/search', ctrl.searchTracks);
 router.use(requireCouple);
 
 router.get('/playlist', ctrl.getPlaylist);
+router.post('/playlist/song', ctrl.addSong);
 router.post('/playlist/songs', ctrl.addSong);
+router.delete('/playlist/song/:songId', ctrl.removeSong);
 router.delete('/playlist/songs/:songId', ctrl.removeSong);
 
 module.exports = router;
